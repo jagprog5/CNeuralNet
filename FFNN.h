@@ -3,6 +3,7 @@
 
 #define nodesIndexFFNN (layer - 1)
 
+
 struct Node {
     float bias;
     float* weights;

@@ -4,6 +4,7 @@
 #include <math.h>
 #include "FFNN.h"
 
+
 struct FFNN* alloc(int numLayers, int* layerSizes) {
     struct FFNN *ffnn = malloc(sizeof(struct FFNN));
     ffnn->numLayers = numLayers;

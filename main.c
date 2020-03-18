@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "FFNN.h"
 int main() {
-    // TODO create make file
+    // TODO: create make file
     // gcc main.c FFNN.h FFNN.c -o ./a.exe -lm && ./a.exe
 
     int layerSizes[5] = {3, 4, 4, 4, 3};
