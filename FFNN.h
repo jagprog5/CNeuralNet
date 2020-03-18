@@ -3,6 +3,7 @@
 
 #define nodesIndexFFNN (layer - 1)
 
+
 struct Node {
     float bias;
     float* weights;
@@ -12,6 +13,9 @@ struct ForwardLog {
     // stores inputs into a node
     // info needed for backpropagation
     float* nodeInputs;
+
+    // partial derivative of cost function (output) to this node's input
+    float* cToI;
 };
 
 struct NodeGradient {
@@ -44,5 +48,9 @@ void forwardPass(struct FFNN* ffnn);
 float* getOutput(struct FFNN* ffnn);
 
 float quadraticCost(float* prediction, float* actual, int size);
+
+struct NodeGradient** backwardPass(struct FFNN* ffnn, float* actual);
+
+void applyGradient(struct FFNN* ffnn, struct NodeGradient** gradient, float learningRate);
 
 #endif
