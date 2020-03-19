@@ -53,4 +53,10 @@ struct NodeGradient** backwardPass(struct FFNN* ffnn, float* actual);
 
 void applyGradient(struct FFNN* ffnn, struct NodeGradient** gradient, float learningRate);
 
+void stochasticTrain(struct FFNN* ffnn,
+                    float** inputs, 
+                    float** outputs, 
+                    int trainingSetSize, 
+                    float learningRate);
+
 #endif

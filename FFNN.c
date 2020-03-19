@@ -4,7 +4,6 @@
 #include <math.h>
 #include "FFNN.h"
 
-
 struct FFNN* alloc(int numLayers, int* layerSizes) {
     struct FFNN *ffnn = malloc(sizeof(struct FFNN));
     ffnn->numLayers = numLayers;
@@ -192,5 +191,24 @@ void applyGradient(struct FFNN* ffnn, struct NodeGradient** gradient, float lear
                 ffnn->nodes[nodesIndexFFNN][i].weights[k] -= learningRate * gradient[nodesIndexFFNN][i].dWeights[k];
             }
         }
+    }
+}
+
+void stochasticTrain(struct FFNN* ffnn,
+                    float** inputs, 
+                    float** outputs, 
+                    int trainingSetSize, 
+                    float learningRate) {
+    
+    for (int i = 0; i < trainingSetSize; ++i) {
+        setInput(ffnn, inputs[i]);
+        forwardPass(ffnn);
+        struct NodeGradient** gradient = backwardPass(ffnn, outputs[i]);
+        applyGradient(ffnn, gradient, 0.01f);
+        free(gradient);
+
+        float* output = getOutput(ffnn);
+        float cost = quadraticCost(output, inputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
+        printf("%3.3f\n", cost);
     }
 }
