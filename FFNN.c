@@ -52,9 +52,9 @@ void randomize(struct FFNN* ffnn) {
         int numNodes = ffnn->layerSizes[layer];
         int weightsPerNode = ffnn->layerSizes[layer - 1];
         for (int i = 0; i < numNodes; ++i) {
-            ffnn->nodes[nodesIndexFFNN][i].bias = (float)rand() / RAND_MAX;
+            ffnn->nodes[nodesIndexFFNN][i].bias = ((float)rand() / RAND_MAX) * 2 - 1;
             for (int j = 0; j < weightsPerNode; ++j) {
-                ffnn->nodes[nodesIndexFFNN][i].weights[j] = (float)rand() / RAND_MAX;
+                ffnn->nodes[nodesIndexFFNN][i].weights[j] = ((float)rand() / RAND_MAX) * 2 - 1;
             }
         }
     }
@@ -97,8 +97,7 @@ void forwardPass(struct FFNN* ffnn) {
         int numNodes = ffnn->layerSizes[layer];
         int weightsPerNode = ffnn->layerSizes[layer - 1];
         for (int i = 0; i < numNodes; ++i) {
-            float accum = 0;
-            accum += ffnn->nodes[nodesIndexFFNN][i].bias;
+            float accum = ffnn->nodes[nodesIndexFFNN][i].bias;
             for (int j = 0; j < weightsPerNode; ++j) {
                 float input = ffnn->forwardVals[layer - 1][j];
                 accum += ffnn->nodes[nodesIndexFFNN][i].weights[j] * input;
@@ -166,7 +165,7 @@ struct NodeGradient** backwardPass(struct FFNN* ffnn, float* actual) {
                         priorCToI += ffnn->forwardLog[nodesIndexFFNN + 1][k].cToI[i];
                     }
                 }
-                float cToI = oToI * priorCToI;
+                float cToI = priorCToI * oToI;
                 ffnn->forwardLog[nodesIndexFFNN][i].cToI[j] = cToI;
 
                 float sToW = ffnn->forwardLog[nodesIndexFFNN][i].nodeInputs[j];
@@ -200,15 +199,17 @@ void stochasticTrain(struct FFNN* ffnn,
                     int trainingSetSize, 
                     float learningRate) {
     
+    putchar('\n');
     for (int i = 0; i < trainingSetSize; ++i) {
         setInput(ffnn, inputs[i]);
         forwardPass(ffnn);
         struct NodeGradient** gradient = backwardPass(ffnn, outputs[i]);
-        applyGradient(ffnn, gradient, 0.01f);
+        applyGradient(ffnn, gradient, learningRate);
         free(gradient);
 
-        float* output = getOutput(ffnn);
-        float cost = quadraticCost(output, inputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
-        printf("%3.3f\n", cost);
+        float* guess = getOutput(ffnn);
+        float cost = quadraticCost(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
+
+        printf("\033[A\33[2K\rCost:  %3.3f\n", cost);
     }
 }
