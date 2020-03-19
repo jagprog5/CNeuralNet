@@ -1,26 +1,24 @@
 #ifndef FORWARD_NETWORK_H
 #define FORWARD_NETWORK_H
 
-#define nodesIndexFFNN (layer - 1)
+// ====Helper defines for indexing notation====
+// L is layer index, J is neuron index in layer, K is neuron index in (L-1)th layer.
 
+// Weight from K output to J input
+#define W(L, J, K) (ffnn->nodes[L][J].weights[K])
+
+// Bias
+#define B(L, J) (ffnn->nodes[L][J].bias)
+
+// Output computed by neuron from sum and activation function
+#define A(L, J) (ffnn->forwardVals[L][J])
 
 struct Node {
     float bias;
     float* weights;
 };
 
-struct ForwardLog {
-    // stores inputs into a node
-    // info needed for backpropagation
-    float* nodeInputs;
-
-    // partial derivative of cost function (output) to this node's input
-    float* cToI;
-};
-
 struct NodeGradient {
-    // stores results from back propagation
-    // partial derivative with respect to cost function
     float dBias;
     float* dWeights;
 };
@@ -32,12 +30,18 @@ struct FFNN {
     struct Node** nodes;
 
     float** forwardVals; // outputs from each node after forward pass
-    struct ForwardLog** forwardLog; // holds required info for backpropagation
+
+    // boolean indicating usage of softmax on output nodes
+    int softMax;
 };
 
 struct FFNN* alloc(int numLayers, int* layerSizes);
 
+void enableSoftMax(struct FFNN* ffnn, int boolEnable);
+
 void randomize(struct FFNN* ffnn);
+
+void setNetwork(struct FFNN* ffnn, float** vals);
 
 void print(struct FFNN* ffnn);
 
@@ -52,5 +56,11 @@ float quadraticCost(float* prediction, float* actual, int size);
 struct NodeGradient** backwardPass(struct FFNN* ffnn, float* actual);
 
 void applyGradient(struct FFNN* ffnn, struct NodeGradient** gradient, float learningRate);
+
+void stochasticTrain(struct FFNN* ffnn,
+                    float** inputs, 
+                    float** outputs, 
+                    int trainingSetSize, 
+                    float learningRate);
 
 #endif

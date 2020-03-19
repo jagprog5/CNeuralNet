@@ -1,41 +1,115 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <unistd.h>
+#include <math.h>
 #include "FFNN.h"
+#include "MNISTRead.h"
+
 int main() {
-    // TODO: create make file
-    // gcc main.c FFNN.h FFNN.c -o ./a.exe -lm && ./a.exe
+    int layers[3] = {2, 1, 2};
+    float** vals = malloc(sizeof(float*) * 3);
+    float hidden1[] = {0.763774618976614, 0.13436424411240122, 0.8474337369372327};
+    vals[0] = hidden1;
+    float hidden2[] = {0.49543508709194095, 0.2550690257394217, 0.651592972722763, 0.4494910647887381};
+    vals[1] = hidden2;
 
-    int layerSizes[6] = {4, 4, 5, 6, 6, 4};
-    struct FFNN* ffnn = alloc(4, layerSizes);
-    randomize(ffnn);
+    struct FFNN* ffnn = alloc(3, layers);
+    ffnn->softMax = 1;
+    setNetwork(ffnn, vals);
+    print(ffnn);
+    float in[] = {1, 0};
+    setInput(ffnn, in);
+    forwardPass(ffnn);
+    float* out = getOutput(ffnn);
+    printf("Sum: %f\n", out[0] + out[1]);
+    printf("Output from forward pass: %f,%f\n", out[0], out[1]);
+    
+    float expected[] = {0, 1};
+    struct NodeGradient** gradient = backwardPass(ffnn, expected);
+    printf("%f\n", gradient[1][0].dBias);
+    printf("%f,%f\n", gradient[2][0].dBias, gradient[2][1].dBias);
 
-    int sample = 6;
-    float inputs[6][4] =       {{0, 0, 0, 0},
-                                {0, 0, 0, 1},
-                                {0, 0, 1, 0},
-                                {0, 0, 1, 1},
-                                {0, 1, 0, 0},
-                                {1, 0, 0, 0}};
-    float idealOutputs[6][4] = {{1, 1, 1, 1},
-                                {1, 1, 1, 1},
-                                {0, 1, 1, 1},
-                                {1, 0, 1, 1},
-                                {1, 1, 0, 1},
-                                {0, 0, 0, 0}};
-    for (int i = 0; i < 100000; ++i) {
-        int index = rand() % sample;
-        setInput(ffnn, inputs[index]);
-        forwardPass(ffnn);
-        struct NodeGradient** gradient = backwardPass(ffnn, idealOutputs[index]);
-        applyGradient(ffnn, gradient, 0.1f);
-        if (i % 4269 == 0) {
-            float* output = getOutput(ffnn);
-            float cost = quadraticCost(output, idealOutputs[index], 4);
-            printf("%f\n", cost);
-            // printf("Input:%d, Out:{%f,%f,%f,%f}\n", index, output[0], 
-            //                         output[1], output[2], output[3]);
-        }
-    }
-
+    applyGradient(ffnn, gradient, 1);
+    print(ffnn);
     return 0;
 }
+
+// void MNISTVisualStochasticTrain(struct FFNN* ffnn,
+//                     float** inputs, 
+//                     float** outputs, 
+//                     int trainingSetSize, 
+//                     float learningRate,
+//                     int width,
+//                     int height);
+
+// int main() {
+//     int numImages;
+//     int width;
+//     int height;
+//     float** imgs = readMNISTImages(&numImages, &width, &height);
+//     float** labels = readMNISTLabels(&numImages);
+    
+//     int inputLayerSize = width * height;
+//     int layers[5] = {inputLayerSize, 
+//                         32,
+//                         10};
+//     struct FFNN* ffnn = alloc(3, layers);
+//     enableSoftMax(ffnn, 1);
+//     randomize(ffnn);
+//     // stochasticTrain(ffnn, imgs, labels, numImages, 0.01f);
+//     MNISTVisualStochasticTrain(ffnn, imgs, labels, numImages, 0.001f, width, height);
+//     return 0;
+// }
+
+
+// void MNISTVisualStochasticTrain(struct FFNN* ffnn,
+//                     float** inputs, 
+//                     float** outputs, 
+//                     int trainingSetSize, 
+//                     float learningRate,
+//                     int width,
+//                     int height) {
+
+//     puts("========Training========");
+//     int numLines = height + 5;
+//     for (int i = 0; i < numLines; ++i) {
+//         putchar('\n');
+//     }
+    
+//     for (int i = 0; i < trainingSetSize; ++i) {
+//         // sleep(1);
+//         setInput(ffnn, inputs[i]);
+//         forwardPass(ffnn);
+//         struct NodeGradient** gradient = backwardPass(ffnn, outputs[i]);
+//         applyGradient(ffnn, gradient, learningRate);
+//         free(gradient + 1);
+
+//         // =========
+//         // Make sure to have the terminal window tall enough
+
+
+//         for (int j = 0; j < numLines; ++j) {
+//             printf("\033[A\33[2K\r");
+//         }
+
+//         float* guess = getOutput(ffnn);
+//         float cost = quadraticCost(guess, outputs[i], 10);
+
+//         char* imgStr = getImgStr(inputs[i], width, height);
+//         puts(imgStr);
+//         puts("       0123456789");
+//         printf("Label: ");
+//         for (int j = 0; j < 10; ++j) {
+//             putchar(shade(outputs[i][j]));
+//         }
+//         putchar('\n');
+//         printf("Guess: ");
+//         for (int j = 0; j < 10; ++j) {
+//             putchar(shade(guess[j]));
+//         }
+//         putchar('\n');
+//         printf("Cost: %.3f\n", cost);
+//     }
+//     putchar('\a');
+// }

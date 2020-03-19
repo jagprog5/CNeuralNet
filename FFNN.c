@@ -4,58 +4,67 @@
 #include <math.h>
 #include "FFNN.h"
 
-
+/**
+ * layerSizes is shallow copied, but not modified
+ */
 struct FFNN* alloc(int numLayers, int* layerSizes) {
-    struct FFNN *ffnn = malloc(sizeof(struct FFNN));
+    struct FFNN *ffnn = malloc(sizeof(*ffnn));
     ffnn->numLayers = numLayers;
 
-    ffnn->layerSizes = malloc(sizeof(int) * numLayers);
-    for (int i = 0; i < numLayers; ++i) {
-        // deep copy for safety
-        ffnn->layerSizes[i] = layerSizes[i];
-    }
+    ffnn->layerSizes = malloc(sizeof(*ffnn->layerSizes) * numLayers);
+    ffnn->layerSizes = layerSizes;
 
-    // first layer only contains inputs, not Nodes
-    ffnn->nodes = malloc(sizeof(struct Node*) * (numLayers - 1));
-    for (int layer = 1; layer < numLayers; ++layer) {
-        int numNodes = ffnn->layerSizes[layer];
-        int weightsPerNode = ffnn->layerSizes[layer - 1];
+    ffnn->nodes = malloc(sizeof(*ffnn->nodes) * (numLayers - 1));
+    // First layer only contains inputs, not nodes.
+    // Leaving empty first layer to allow easy indexing
+    ffnn->nodes -= 1;
 
-        ffnn->nodes[nodesIndexFFNN] = malloc(sizeof(struct Node) * numNodes);
-        for (int i = 0; i < numNodes; ++i) {
-            ffnn->nodes[nodesIndexFFNN][i].weights = malloc(sizeof(float) * weightsPerNode);
+    for (int l = 1; l < numLayers; ++l) {
+        int numNodes = ffnn->layerSizes[l];
+        int weightsPerNode = ffnn->layerSizes[l - 1];
+        ffnn->nodes[l] = malloc(sizeof(**ffnn->nodes) * numNodes);
+        for (int j = 0; j < numNodes; ++j) {
+            ffnn->nodes[l][j].weights = malloc(sizeof(*(**ffnn->nodes).weights) * weightsPerNode);
         }
     }
 
-    ffnn->forwardVals = malloc(sizeof(float*) * numLayers);
-    for (int layer = 0; layer < numLayers; ++layer) {
-        ffnn->forwardVals[layer] = malloc(sizeof(float) * ffnn->layerSizes[layer]);
+    ffnn->forwardVals = malloc(sizeof(*ffnn->forwardVals) * numLayers);
+    for (int l = 0; l < numLayers; ++l) {
+        ffnn->forwardVals[l] = malloc(sizeof(**ffnn->forwardVals) * ffnn->layerSizes[l]);
     }
 
-    // Only required for training
-    ffnn->forwardLog = malloc(sizeof(struct ForwardLog*) * (numLayers - 1));
-    for (int layer = 1; layer < numLayers; ++layer) {
-        int numNodes = ffnn->layerSizes[layer];
-        int inputsPerNode = ffnn->layerSizes[layer - 1];
-
-        ffnn->forwardLog[nodesIndexFFNN] = malloc(sizeof(struct ForwardLog) * numNodes);
-        for (int i = 0; i < numNodes; ++i) {
-            ffnn->forwardLog[nodesIndexFFNN][i].cToI = malloc(sizeof(float) * inputsPerNode);
-            ffnn->forwardLog[nodesIndexFFNN][i].nodeInputs = malloc(sizeof(float) * inputsPerNode);
-        }
-    }
+    ffnn->softMax = 0;
 
     return ffnn;
 }
 
+/**
+ * Allows softmax activation on output nodes.
+ */
+void enableSoftMax(struct FFNN* ffnn, int boolEnable) {
+    ffnn->softMax = boolEnable;
+}
+
 void randomize(struct FFNN* ffnn) {
-    for (int layer = 1; layer < ffnn->numLayers; ++layer) {
-        int numNodes = ffnn->layerSizes[layer];
-        int weightsPerNode = ffnn->layerSizes[layer - 1];
-        for (int i = 0; i < numNodes; ++i) {
-            ffnn->nodes[nodesIndexFFNN][i].bias = (float)rand() / RAND_MAX;
-            for (int j = 0; j < weightsPerNode; ++j) {
-                ffnn->nodes[nodesIndexFFNN][i].weights[j] = (float)rand() / RAND_MAX;
+    for (int l = 1; l < ffnn->numLayers; ++l) {
+        float scaleDown = ffnn->layerSizes[l - 1] + 1;
+        for (int j = 0; j < ffnn->layerSizes[l]; ++j) {
+            B(l, j) = ((float)rand() / RAND_MAX) / scaleDown;
+            for (int k = 0; k < ffnn->layerSizes[l - 1]; ++k) {
+                W(l, j, k) = ((float)rand() / RAND_MAX) / scaleDown;
+            }
+        }
+    }
+}
+
+void setNetwork(struct FFNN* ffnn, float** vals) {
+    vals -= 1;
+    for (int l = 1; l < ffnn->numLayers; ++l) {
+        int neuronOffset = ffnn->layerSizes[l - 1] + 1;
+        for (int j = 0; j < ffnn->layerSizes[l]; ++j) {
+            B(l, j) = vals[l][j * neuronOffset];
+            for (int k = 0; k < ffnn->layerSizes[l - 1]; ++k) {
+                W(l, j, k) = vals[l][k + 1 + j * neuronOffset];
             }
         }
     }
@@ -63,57 +72,28 @@ void randomize(struct FFNN* ffnn) {
 
 void print(struct FFNN* ffnn) {
     puts("====================Feed Forward Neural Network=================");
-    for (int layer = 0; layer < ffnn->numLayers; ++layer) {
-        printf("Layer %d\n", layer);
-        int numNodes = ffnn->layerSizes[layer];
-        int weightsPerNode = ffnn->layerSizes[layer - 1];
-        for (int i = 0; i < numNodes; ++i) {
-            if (layer==0) {
-                printf("\t%d Inputs\n", numNodes);
-                break;
-            }
-            printf("\tNode %d\n", i);
-            float bias = ffnn->nodes[nodesIndexFFNN][i].bias;
-            printf("\t\tB: %.2f", bias);
-            for (int j = 0; j < weightsPerNode; ++j) {
-                float weight = ffnn->nodes[nodesIndexFFNN][i].weights[j];
-                printf(", W%d: %.2f", j, weight);
+    for (int l = 0; l < ffnn->numLayers; ++l) {
+        printf("Layer %d\n", l);
+        int numNodes = ffnn->layerSizes[l];
+        if (l == 0) {
+            printf("\t%d Inputs\n", numNodes);
+            continue;
+        } else if (ffnn->softMax && l == ffnn->numLayers - 1) {
+            puts("\tUsing Softmax Activation");
+        }
+        int weightsPerNode = ffnn->layerSizes[l - 1];
+        for (int j = 0; j < numNodes; ++j) {
+            printf("\tNode %d\n", j);
+            float bias = B(l, j);
+            printf("\t\tB: %f", bias);
+            for (int k = 0; k < weightsPerNode; ++k) {
+                float weight = W(l, j, k);
+                printf(", W%d: %f", k, weight);
             }
             putchar('\n');
         }
     }
     puts("===============================================================");
-}
-
-void setInput(struct FFNN* ffnn, float* inputs) {
-    ffnn->forwardVals[0] = inputs;
-}
-
-float sigmoid(float in) {
-    return 1 / (1 + powf(M_E, -in));
-}
-
-void forwardPass(struct FFNN* ffnn) {
-    for (int layer = 1; layer < ffnn->numLayers; ++layer) {
-        int numNodes = ffnn->layerSizes[layer];
-        int weightsPerNode = ffnn->layerSizes[layer - 1];
-        for (int i = 0; i < numNodes; ++i) {
-            float accum = 0;
-            accum += ffnn->nodes[nodesIndexFFNN][i].bias;
-            for (int j = 0; j < weightsPerNode; ++j) {
-                float input = ffnn->forwardVals[layer - 1][j];
-                accum += ffnn->nodes[nodesIndexFFNN][i].weights[j] * input;
-                ffnn->forwardLog[nodesIndexFFNN][i].nodeInputs[j] = input;
-            }
-            accum = sigmoid(accum);
-            ffnn->forwardVals[layer][i] = accum;
-        }
-    }
-}
-
-// Requires a prior run of forwardPass
-float* getOutput(struct FFNN* ffnn) {
-    return ffnn->forwardVals[ffnn->numLayers - 1];
 }
 
 float quadraticCost(float* prediction, float* actual, int size) {
@@ -125,72 +105,125 @@ float quadraticCost(float* prediction, float* actual, int size) {
     return total;
 }
 
-// Requires a prior run of forwardPass
+/**
+ * inputs is shallow copied but not modified
+ * setInput should be called prior to forwardPass
+ */
+void setInput(struct FFNN* ffnn, float* inputs) {
+    ffnn->forwardVals[0] = inputs;
+}
+ 
+/**
+ * Returns a shallow copy whose content will be modified after every call of forward pass
+ * Requires a prior run of forwardPass
+ */
+float* getOutput(struct FFNN* ffnn) {
+    return ffnn->forwardVals[ffnn->numLayers - 1];
+}
+
+void forwardPass(struct FFNN* ffnn) {
+    for (int l = 1; l < ffnn->numLayers; ++l) {
+        for (int j = 0; j < ffnn->layerSizes[l]; ++j) {
+            float accum = B(l, j);
+            for (int k = 0; k < ffnn->layerSizes[l - 1]; ++k) {
+                float input = A(l - 1, k);
+                float weight = W(l, j, k);
+                accum += input * weight;
+            }
+            // don't apply sigmoid if softmax enabled and in output layer
+            if (!ffnn->softMax || l != ffnn->numLayers - 1) {
+                accum = 1 / (1 + powf(M_E, -accum)); // sigmoid activation
+            }
+            A(l, j) = accum;
+        }
+    }
+    if (ffnn->softMax) {
+        int n = ffnn->layerSizes[ffnn->numLayers - 1];
+        float* outputs = getOutput(ffnn);
+        float denominator = 0;
+        for (int i = 0; i < n; ++i) {
+            outputs[i] = powf(M_E, -outputs[i]);
+            denominator += outputs[i];
+        }
+        for (int i = 0; i < n; ++i) {
+            outputs[i] /= denominator;
+        }
+    }
+}
+
+/**
+ * Requires a prior run of forwardPass
+ */
 struct NodeGradient** backwardPass(struct FFNN* ffnn, float* actual) {
-    // Throughout this function, AToB represents the partial derivative of A with respect to B
-
-    struct NodeGradient** gradient = malloc(sizeof(struct NodeGradient*) * (ffnn->numLayers - 1));
-
-    // cost to predictions (predictions are the outputs from the output layer)
-    float* prediction = getOutput(ffnn);
-    int outputLength = ffnn->layerSizes[ffnn->numLayers - 1];
-    float cToP[outputLength];
-    for (int i = 0; i < outputLength; ++i) {
-        cToP[i] = prediction[i] - actual[i];
-        //cToP[i] *= 2; // leaving for completeness
+    struct NodeGradient** gradient = malloc(sizeof(*gradient) * ffnn->numLayers);
+    gradient -= 1; // same indexing as Nodes
+    for (int l = 1; l < ffnn->numLayers; ++l) {
+        gradient[l] = malloc(sizeof(**gradient) * ffnn->layerSizes[l]);
+        for (int j = 0; j < ffnn->layerSizes[l]; ++j) {
+            gradient[l][j].dWeights = malloc(sizeof((**gradient).dWeights[0])
+                                                 * ffnn->layerSizes[l - 1]);
+        }
     }
 
-    // iterate from output to 1st hidden layer
-    for (int layer = ffnn->numLayers - 1; layer > 0; --layer) {
-        int numNodes = ffnn->layerSizes[layer];
-        gradient[nodesIndexFFNN] = malloc(sizeof(struct NodeGradient) * numNodes);
-        int weightsPerNode = ffnn->layerSizes[layer - 1];
-        for (int i = 0; i < numNodes; ++i) {
-            gradient[nodesIndexFFNN][i].dWeights = malloc(sizeof(float) * weightsPerNode);
-            // derivative of sigmoid is sig(x) * (1 - sig(x))
-            float sigOut = ffnn->forwardVals[layer][i];
-            // partial derivative of output to weighted sum
-            float oToS = sigOut * (1 - sigOut);
-
-            for (int j = 0; j < weightsPerNode; ++j) {
-                    // corresponding weight for input
-                float sToI = ffnn->nodes[nodesIndexFFNN][i].weights[j];
-                float oToI = oToS * sToI;
-
-                float priorCToI;
-                if (layer == ffnn->numLayers - 1) {
-                    // currently in output layer
-                    priorCToI = cToP[i];
-                } else {
-                    priorCToI = 0;
-                    for (int k = 0; k < ffnn->layerSizes[layer + 1]; ++k) {
-                        priorCToI += ffnn->forwardLog[nodesIndexFFNN + 1][k].cToI[i];
-                    }
+    for (int l = ffnn->numLayers - 1; l > 0; --l) {
+        for (int k = 0; k < ffnn->layerSizes[l]; ++k) {
+            gradient[l][k].dBias = 0;
+            float neuronOutput = ffnn->forwardVals[l][k];
+            if (l == ffnn->numLayers - 1) {
+                gradient[l][k].dBias = actual[k] - neuronOutput; // output neurons
+            } else {
+                for (int j = 0; j < ffnn->layerSizes[l + 1]; ++j) {
+                    float error = gradient[l + 1][j].dBias;
+                    float weight = W(l + 1, j, k);
+                    gradient[l][k].dBias += error * weight;
                 }
-                float cToI = oToI * priorCToI;
-                ffnn->forwardLog[nodesIndexFFNN][i].cToI[j] = cToI;
+            }
+            gradient[l][k].dBias *= neuronOutput * (1 - neuronOutput); // derivative of sigmoid
+        }
+    }
 
-                float sToW = ffnn->forwardLog[nodesIndexFFNN][i].nodeInputs[j];
-                float oToW = oToS * sToW; // output to weight
-                float cToW = oToW * priorCToI; // cost function to weight
-                gradient[nodesIndexFFNN][i].dWeights[j] =  cToW;
-
-                float sToB = 1; // keeping for completeness
-                float cToB = priorCToI * oToS * sToB;
-                gradient[nodesIndexFFNN][i].dBias = cToB;
+    // apply errors to find sensitivity for weights
+    for (int l = 1; l < ffnn->numLayers; ++l) {
+        for (int j = 0; j < ffnn->layerSizes[l]; ++j) {
+            float error = gradient[l][j].dBias;
+            for (int k = 0; k < ffnn->layerSizes[l - 1]; ++k) {
+                float input = A(l - 1, k);
+                gradient[l][j].dWeights[k] = error * input;
             }
         }
     }
+
     return gradient;
 }
 
 void applyGradient(struct FFNN* ffnn, struct NodeGradient** gradient, float learningRate) {
-    for (int layer = 1; layer < ffnn->numLayers; ++layer) {
-        for (int i = 0; i < ffnn->layerSizes[layer]; ++i) {
-            ffnn->nodes[nodesIndexFFNN][i].bias -= learningRate * gradient[nodesIndexFFNN][i].dBias;
-            for (int k = 0; k < ffnn->layerSizes[layer - 1]; ++k) {
-                ffnn->nodes[nodesIndexFFNN][i].weights[k] -= learningRate * gradient[nodesIndexFFNN][i].dWeights[k];
+    for (int l = 1; l < ffnn->numLayers; ++l) {
+        for (int j = 0; j < ffnn->layerSizes[l]; ++j) {
+            B(l, j) += learningRate * gradient[l][j].dBias;
+            for (int k = 0; k < ffnn->layerSizes[l - 1]; ++k) {
+                W(l, j, k) += learningRate * gradient[l][j].dWeights[k];
             }
         }
+    }
+}
+
+void stochasticTrain(struct FFNN* ffnn,
+                    float** inputs, 
+                    float** outputs, 
+                    int trainingSetSize, 
+                    float learningRate) {
+    
+    putchar('\n');
+    for (int i = 0; i < trainingSetSize; ++i) {
+        setInput(ffnn, inputs[i]);
+        forwardPass(ffnn);
+        struct NodeGradient** gradient = backwardPass(ffnn, outputs[i]);
+        applyGradient(ffnn, gradient, learningRate);
+        free(gradient + 1);
+
+        float* guess = getOutput(ffnn);
+        float cost = quadraticCost(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
+
+        printf("\033[A\33[2K\rCost:  %3.3f\n", cost);
     }
 }
