@@ -12,6 +12,8 @@ float** readMNISTImages(uint32_t* numImages, uint32_t* width, uint32_t* height);
 
 float** readMNISTLabels(uint32_t* numLabels);
 
+char shade(float pixel);
+
 char* getImgStr(float* MNISTImage, uint32_t width, uint32_t height);
 
 #endif

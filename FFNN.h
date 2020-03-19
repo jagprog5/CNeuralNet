@@ -11,7 +11,6 @@ struct Node {
 
 struct ForwardLog {
     // stores inputs into a node
-    // info needed for backpropagation
     float* nodeInputs;
 
     // partial derivative of cost function (output) to this node's input

@@ -48,6 +48,17 @@ float** readMNISTImages(uint32_t* numImages, uint32_t* width, uint32_t* height) 
     return imgsOutput;
 }
 
+char shade(float pixel) {
+    char c;
+    if (pixel < 0.1)            c = ' ';
+        else if (pixel < 0.25)  c = '.';
+        else if (pixel < 0.5)   c = ':';
+        else if (pixel < 0.75)  c = '|';
+        else if (pixel < 0.9)   c = 'X';
+        else                    c = '#';
+    return c;
+}
+
 char* getImgStr(float* MNISTImage, uint32_t width, uint32_t height) {
                                     // +height for each newline char
 
@@ -57,11 +68,7 @@ char* getImgStr(float* MNISTImage, uint32_t width, uint32_t height) {
     int outWalk = 0;
     while (imgWalk < width * height) {
         float pixel = MNISTImage[imgWalk++];
-        char c;
-        if (pixel < 0.25)       c = '.';
-        else if (pixel < 0.5)   c = ':';
-        else if (pixel < 0.75)  c = '|';
-        else                    c = '8';
+        char c = shade(pixel);
         out[outWalk++] = c;
 
         if (imgWalk % width == 0) {
