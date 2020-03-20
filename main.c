@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <math.h>
 #include "FFNN.h"
 #include "MNISTRead.h"
 
@@ -13,23 +14,31 @@ void MNISTVisualStochasticTrain(struct FFNN* ffnn,
                     int width,
                     int height);
 
-int main() {
-    // TODO: create make file
-    // gcc main.c FFNN.h FFNN.c MNISTRead.h MNISTRead.c -o ./a.exe -lm && ./a.exe
-    
-    int layers[2] = {2, 2};
-    struct FFNN* ffnn = alloc(3, layers);
-    randomize(ffnn);
-
-    // setInput(ffnn, imgs[0]);
-    // forwardPass(ffnn);
-    // backwardPass(ffnn, labels[0]);
-    // stochasticTrain(ffnn, imgs, labels, numImages, 0.1f);
-
-    return 0;
+float sig(float in) {
+    return 1 / (1 + powf(M_E, -in));
 }
 
-/*
+// int main() {
+//     int layers[3] = {2, 2, 2};
+
+//     struct FFNN* ffnn = alloc(3, layers);
+//     randomize(ffnn);
+
+//     float in[2] = {1, 1};
+//     setInput(ffnn, in);
+//     forwardPass(ffnn);
+//     float *out = malloc(sizeof(float) * 2);
+//     out[0] = out[1] = 0;
+//     puts("Going");
+//     struct NodeGradient** gradient = backwardPass(ffnn, out);
+//     puts("Gone");
+    
+//     // stochasticTrain(ffnn, imgs, labels, numImages, 0.1f);
+
+//     return 0;
+// }
+
+
 int main() {
     int numImages;
     int width;
@@ -39,15 +48,17 @@ int main() {
     
     int inputLayerSize = width * height;
     int layers[5] = {inputLayerSize, 
-                        inputLayerSize << 2,
-                        inputLayerSize << 4,
-                        inputLayerSize << 6,
+                        inputLayerSize >> 2,
+                        inputLayerSize >> 4,
+                        inputLayerSize >> 6,
                         10};
     struct FFNN* ffnn = alloc(3, layers);
     randomize(ffnn);
+    // stochasticTrain(ffnn, imgs, labels, numImages, 0.01f);
     MNISTVisualStochasticTrain(ffnn, imgs, labels, numImages, 0.01f, width, height);
     return 0;
 }
+
 
 void MNISTVisualStochasticTrain(struct FFNN* ffnn,
                     float** inputs, 
@@ -64,7 +75,7 @@ void MNISTVisualStochasticTrain(struct FFNN* ffnn,
     }
     
     for (int i = 0; i < trainingSetSize; ++i) {
-        sleep(1);
+        // sleep(1);
         setInput(ffnn, inputs[i]);
         forwardPass(ffnn);
         struct NodeGradient** gradient = backwardPass(ffnn, outputs[i]);
@@ -99,5 +110,3 @@ void MNISTVisualStochasticTrain(struct FFNN* ffnn,
     }
     putchar('\a');
 }
-
-*/

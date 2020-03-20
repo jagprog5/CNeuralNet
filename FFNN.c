@@ -114,7 +114,8 @@ struct NodeGradient** backwardPass(struct FFNN* ffnn, float* actual) {
     for (int l = 1; l < ffnn->numLayers; ++l) {
         gradient[l] = malloc(sizeof(**gradient) * ffnn->layerSizes[l]);
         for (int j = 0; j < ffnn->layerSizes[l]; ++j) {
-            gradient[l][j].dWeights = malloc(sizeof((**gradient).dWeights[0]) * ffnn->layerSizes[l - 1]);
+            gradient[l][j].dWeights = malloc(sizeof((**gradient).dWeights[0])
+                                                 * ffnn->layerSizes[l - 1]);
         }
     }
 
@@ -134,7 +135,7 @@ struct NodeGradient** backwardPass(struct FFNN* ffnn, float* actual) {
     // calculate errors for hidden layers
     for (int l = ffnn->numLayers - 2; l > 0; --l) {
         for (int k = 0; k < ffnn->layerSizes[l]; ++k) {
-            for (int j = 0; j < ffnn->layerSizes[j + 1]; ++j) {
+            for (int j = 0; j < ffnn->layerSizes[l + 1]; ++j) {
                 float pCToZ = gradient[l + 1][j].dBias;
                 float zToA = W(l, j, k);
                 float in = ffnn->forwardVals[l][k];
