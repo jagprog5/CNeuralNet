@@ -97,6 +97,7 @@ float** readMNISTLabels(uint32_t* numLabels) {
     for (uint32_t i = 0; i < *numLabels; ++i) {
         outputs[i] = calloc(10, sizeof(float));
         outputs[i][labels[i]] = 1;
+        outputs[i][0] = 1;
     }
 
     fclose(fp);
