@@ -1,25 +1,24 @@
 #ifndef FORWARD_NETWORK_H
 #define FORWARD_NETWORK_H
 
-#define nodesIndexFFNN (layer - 1)
+// ====Helper defines for indexing notation====
+// L is layer index, J is neuron index in layer, K is neuron index in (L-1)th layer.
 
+// Weight from K output to J input
+#define W(L, J, K) (ffnn->nodes[L][J].weights[K])
+
+// Bias
+#define B(L, J) (ffnn->nodes[L][J].bias)
+
+// Output computed by neuron from sum and activation function
+#define A(L, J) (ffnn->forwardVals[L][J])
 
 struct Node {
     float bias;
     float* weights;
 };
 
-struct ForwardLog {
-    // stores inputs into a node
-    float* nodeInputs;
-
-    // partial derivative of cost function (output) to this node's input
-    float* cToI;
-};
-
 struct NodeGradient {
-    // stores results from back propagation
-    // partial derivative with respect to cost function
     float dBias;
     float* dWeights;
 };
@@ -31,7 +30,6 @@ struct FFNN {
     struct Node** nodes;
 
     float** forwardVals; // outputs from each node after forward pass
-    struct ForwardLog** forwardLog; // holds required info for backpropagation
 };
 
 struct FFNN* alloc(int numLayers, int* layerSizes);
