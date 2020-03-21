@@ -36,6 +36,8 @@ struct FFNN* alloc(int numLayers, int* layerSizes);
 
 void randomize(struct FFNN* ffnn);
 
+void setNetwork(struct FFNN* ffnn, float** vals);
+
 void print(struct FFNN* ffnn);
 
 void setInput(struct FFNN* ffnn, float* inputs);
