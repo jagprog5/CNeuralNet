@@ -34,14 +34,27 @@ struct FFNN* alloc(int numLayers, int* layerSizes) {
     return ffnn;
 }
 
-// ranomizes weights and bias in range [0,1)
 void randomize(struct FFNN* ffnn) {
     for (int l = 1; l < ffnn->numLayers; ++l) {
-        float scaleDown = ffnn->layerSizes[l - 1];
+        float scaleDown = ffnn->layerSizes[l - 1] + 1;
         for (int j = 0; j < ffnn->layerSizes[l]; ++j) {
             B(l, j) = ((float)rand() / RAND_MAX) / scaleDown;
             for (int k = 0; k < ffnn->layerSizes[l - 1]; ++k) {
                 W(l, j, k) = ((float)rand() / RAND_MAX) / scaleDown;
+            }
+        }
+    }
+}
+
+// vals is deep copied
+void setNetwork(struct FFNN* ffnn, float** vals) {
+    vals -= 1;
+    for (int l = 1; l < ffnn->numLayers; ++l) {
+        int neuronOffset = ffnn->layerSizes[l - 1] + 1;
+        for (int j = 0; j < ffnn->layerSizes[l]; ++j) {
+            B(l, j) = vals[l][j * neuronOffset];
+            for (int k = 0; k < ffnn->layerSizes[l - 1]; ++k) {
+                W(l, j, k) = vals[l][k + 1 + j * neuronOffset];
             }
         }
     }
@@ -54,16 +67,16 @@ void print(struct FFNN* ffnn) {
         int numNodes = ffnn->layerSizes[l];
         if (l == 0) {
             printf("\t%d Inputs\n", numNodes);
-            break;
+            continue;
         }
         int weightsPerNode = ffnn->layerSizes[l - 1];
         for (int j = 0; j < numNodes; ++j) {
             printf("\tNode %d\n", j);
             float bias = B(l, j);
-            printf("\t\tB: %.2f", bias);
+            printf("\t\tB: %f", bias);
             for (int k = 0; k < weightsPerNode; ++k) {
                 float weight = W(l, j, k);
-                printf(", W%d: %.2f", k, weight);
+                printf(", W%d: %f", k, weight);
             }
             putchar('\n');
         }
@@ -87,6 +100,7 @@ void setInput(struct FFNN* ffnn, float* inputs) {
 }
 
 // Requires a prior run of forwardPass
+// Returns a shallow copy that will be modified after a call of forward pass
 float* getOutput(struct FFNN* ffnn) {
     return ffnn->forwardVals[ffnn->numLayers - 1];
 }
@@ -107,7 +121,6 @@ void forwardPass(struct FFNN* ffnn) {
 }
 
 // Requires a prior run of forwardPass
-// Throughout this function, AToB represents the partial derivative of A with respect to B
 struct NodeGradient** backwardPass(struct FFNN* ffnn, float* actual) {
     struct NodeGradient** gradient = malloc(sizeof(*gradient) * ffnn->numLayers);
     gradient -= 1; // same indexing as Nodes
@@ -119,40 +132,30 @@ struct NodeGradient** backwardPass(struct FFNN* ffnn, float* actual) {
         }
     }
 
-    {
-        // calculate errors for output layer
-        int l = ffnn->numLayers - 1;
-        float* prediction = getOutput(ffnn);
-
-        for (int j = 0; j < ffnn->layerSizes[l]; ++j) {
-            float cToP = prediction[j] - actual[j];
-            float pToZ = prediction[j] * (1 - prediction[j]); // derivative of sigmoid
-            float cToZ = cToP * pToZ;
-            gradient[l][j].dBias = cToZ;
-        }
-    }
-
-    // calculate errors for hidden layers
-    for (int l = ffnn->numLayers - 2; l > 0; --l) {
+    for (int l = ffnn->numLayers - 1; l > 0; --l) {
         for (int k = 0; k < ffnn->layerSizes[l]; ++k) {
-            for (int j = 0; j < ffnn->layerSizes[l + 1]; ++j) {
-                float pCToZ = gradient[l + 1][j].dBias;
-                float zToA = W(l, j, k);
-                float in = ffnn->forwardVals[l][k];
-                float aToZ = in * (1 - in);
-                float nCToZ = pCToZ * zToA * aToZ;
-                gradient[l][k].dBias += nCToZ;
+            gradient[l][k].dBias = 0;
+            float neuronOutput = ffnn->forwardVals[l][k];
+            if (l == ffnn->numLayers - 1) {
+                gradient[l][k].dBias = actual[k] - neuronOutput; // output neurons
+            } else {
+                for (int j = 0; j < ffnn->layerSizes[l + 1]; ++j) {
+                    float error = gradient[l + 1][j].dBias;
+                    float weight = W(l + 1, j, k);
+                    gradient[l][k].dBias += error * weight;
+                }
             }
+            gradient[l][k].dBias *= neuronOutput * (1 - neuronOutput); // derivative of sigmoid
         }
     }
 
-    // apply errors to find sensitivity for weights and biases
+    // apply errors to find sensitivity for weights
     for (int l = 1; l < ffnn->numLayers; ++l) {
         for (int j = 0; j < ffnn->layerSizes[l]; ++j) {
-            float sensitivity = gradient[l][j].dBias;
+            float error = gradient[l][j].dBias;
             for (int k = 0; k < ffnn->layerSizes[l - 1]; ++k) {
                 float input = A(l - 1, k);
-                gradient[l][j].dWeights[k] = sensitivity * input;
+                gradient[l][j].dWeights[k] = error * input;
             }
         }
     }
@@ -163,9 +166,9 @@ struct NodeGradient** backwardPass(struct FFNN* ffnn, float* actual) {
 void applyGradient(struct FFNN* ffnn, struct NodeGradient** gradient, float learningRate) {
     for (int l = 1; l < ffnn->numLayers; ++l) {
         for (int j = 0; j < ffnn->layerSizes[l]; ++j) {
-            B(l, j) -= learningRate * gradient[l][j].dBias;
+            B(l, j) += learningRate * gradient[l][j].dBias;
             for (int k = 0; k < ffnn->layerSizes[l - 1]; ++k) {
-                W(l, j, k) -= learningRate * gradient[l][j].dWeights[k];
+                W(l, j, k) += learningRate * gradient[l][j].dWeights[k];
             }
         }
     }
