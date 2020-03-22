@@ -22,13 +22,22 @@ int main() {
     float** labels = readMNISTLabels(&numImages);
     
     int inputLayerSize = width * height;
-    int layers[5] = {inputLayerSize, 
+    int layerSizes[3] = {inputLayerSize, 
                         32,
                         10};
-    struct FFNN* ffnn = alloc(3, layers);
+    struct FFNN* ffnn = allocFFNN(3, layerSizes);
     randomize(ffnn);
     setCategorical(ffnn);
     MNISTVisualSGD(ffnn, imgs, labels, numImages, 0.01f, width, height);
+    // SGD(ffnn, imgs, labels, numImages, 0.01f);
+    freeFFNN(ffnn);
+    for (int i = 0; i < numImages; ++i) {
+        free(imgs[i]);
+        free(labels[i]);
+    }
+    free(imgs);
+    free(labels);
+
     return 0;
 }
 
@@ -48,17 +57,14 @@ void MNISTVisualSGD(struct FFNN* ffnn,
     }
     
     for (int i = 0; i < trainingSetSize; ++i) {
-        sleep(1);
         setInput(ffnn, inputs[i]);
         forwardPass(ffnn);
-        struct NodeGradient** gradient = backwardPass(ffnn, outputs[i]);
+        struct Node** gradient = backwardPass(ffnn, outputs[i]);
         applyGradient(ffnn, gradient, learningRate);
-        free(gradient + 1);
 
         // =========
         // Everything after this is a visual addition to the SGD function in FFNN.c
         // Make sure to have the terminal window tall enough!
-
 
         for (int j = 0; j < numLines; ++j) {
             // clear screen
@@ -91,20 +97,22 @@ void MNISTVisualSGD(struct FFNN* ffnn,
             }
             putchar(shade(guess[j]));
         }
-        putchar('\n');
+        printf("  %d of %d\n", (i + 1), trainingSetSize);
         printf("Final: ");
         for (int j = 0; j < 10; ++j) {
             putchar(shade(j==guessIndex ? 1 : 0));
         }
 
         if (guessIndex == goodIndex) {
-            puts("\033[0;32m GOOD \033[0m");
+            puts("\033[0;32m  GOOD\033[0m");
         } else {
-            puts("\033[0;31m BAD \033[0m");
+            puts("\033[0;31m  BAD!\033[0m");
         }
         
         putchar('\n');
         printf("Cost: %.3f\n", cost);
+
+        freeNodes(gradient, ffnn->numLayers, ffnn->layerSizes);
     }
     putchar('\a');
 }
