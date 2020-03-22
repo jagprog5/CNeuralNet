@@ -18,11 +18,6 @@ struct Node {
     float* weights;
 };
 
-struct NodeGradient {
-    float dBias;
-    float* dWeights;
-};
-
 // feed forward neural network
 struct FFNN {
     int numLayers; // including inputs, hidden layers, and outputs
@@ -36,7 +31,7 @@ struct FFNN {
     int categorical;
 };
 
-struct FFNN* alloc(int numLayers, int* layerSizes);
+struct FFNN* allocFFNN(int numLayers, int* layerSizes);
 
 void setCategorical(struct FFNN* ffnn);
 
@@ -56,15 +51,20 @@ float* getOutput(struct FFNN* ffnn);
 
 float quadraticCost(float* prediction, float* actual, int size);
 
-struct NodeGradient** backwardPass(struct FFNN* ffnn, float* actual);
+struct Node** backwardPass(struct FFNN* ffnn, float* actual);
 
-void applyGradient(struct FFNN* ffnn, struct NodeGradient** gradient, float learningRate);
+void applyGradient(struct FFNN* ffnn, struct Node** gradient, float learningRate);
 
 void SGD(struct FFNN* ffnn,
                     float** inputs, 
                     float** outputs, 
                     int trainingSetSize, 
-                    float learningRate,
-                    int epochs);
+                    float learningRate);
+
+struct Node** allocNodes(int numLayers, int* layerSizes);
+
+void freeNodes(struct Node** nodes, int numLayers, int* layerSizes);
+
+void freeFFNN(struct FFNN* ffnn);
 
 #endif
