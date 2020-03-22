@@ -4,7 +4,9 @@
 #include <math.h>
 #include "FFNN.h"
 
-// layerSizes is shallow copied, but not modified
+/**
+ * layerSizes is shallow copied, but not modified
+ */
 struct FFNN* alloc(int numLayers, int* layerSizes) {
     struct FFNN *ffnn = malloc(sizeof(*ffnn));
     ffnn->numLayers = numLayers;
@@ -31,7 +33,16 @@ struct FFNN* alloc(int numLayers, int* layerSizes) {
         ffnn->forwardVals[l] = malloc(sizeof(**ffnn->forwardVals) * ffnn->layerSizes[l]);
     }
 
+    ffnn->softMax = 0;
+
     return ffnn;
+}
+
+/**
+ * Allows softmax activation on output nodes.
+ */
+void enableSoftMax(struct FFNN* ffnn, int boolEnable) {
+    ffnn->softMax = boolEnable;
 }
 
 void randomize(struct FFNN* ffnn) {
@@ -46,7 +57,6 @@ void randomize(struct FFNN* ffnn) {
     }
 }
 
-// vals is deep copied
 void setNetwork(struct FFNN* ffnn, float** vals) {
     vals -= 1;
     for (int l = 1; l < ffnn->numLayers; ++l) {
@@ -68,6 +78,8 @@ void print(struct FFNN* ffnn) {
         if (l == 0) {
             printf("\t%d Inputs\n", numNodes);
             continue;
+        } else if (ffnn->softMax && l == ffnn->numLayers - 1) {
+            puts("\tUsing Softmax Activation");
         }
         int weightsPerNode = ffnn->layerSizes[l - 1];
         for (int j = 0; j < numNodes; ++j) {
@@ -93,14 +105,18 @@ float quadraticCost(float* prediction, float* actual, int size) {
     return total;
 }
 
-// Call before forwardPass
-// Inputs is shallow copied but not modified.
+/**
+ * inputs is shallow copied but not modified
+ * setInput should be called prior to forwardPass
+ */
 void setInput(struct FFNN* ffnn, float* inputs) {
     ffnn->forwardVals[0] = inputs;
 }
-
-// Requires a prior run of forwardPass
-// Returns a shallow copy that will be modified after a call of forward pass
+ 
+/**
+ * Returns a shallow copy whose content will be modified after every call of forward pass
+ * Requires a prior run of forwardPass
+ */
 float* getOutput(struct FFNN* ffnn) {
     return ffnn->forwardVals[ffnn->numLayers - 1];
 }
@@ -114,13 +130,30 @@ void forwardPass(struct FFNN* ffnn) {
                 float weight = W(l, j, k);
                 accum += input * weight;
             }
-            accum = 1 / (1 + powf(M_E, -accum)); // sigmoid activation
+            // don't apply sigmoid if softmax enabled and in output layer
+            if (!ffnn->softMax || l != ffnn->numLayers - 1) {
+                accum = 1 / (1 + powf(M_E, -accum)); // sigmoid activation
+            }
             A(l, j) = accum;
+        }
+    }
+    if (ffnn->softMax) {
+        int n = ffnn->layerSizes[ffnn->numLayers - 1];
+        float* outputs = getOutput(ffnn);
+        float denominator = 0;
+        for (int i = 0; i < n; ++i) {
+            outputs[i] = powf(M_E, -outputs[i]);
+            denominator += outputs[i];
+        }
+        for (int i = 0; i < n; ++i) {
+            outputs[i] /= denominator;
         }
     }
 }
 
-// Requires a prior run of forwardPass
+/**
+ * Requires a prior run of forwardPass
+ */
 struct NodeGradient** backwardPass(struct FFNN* ffnn, float* actual) {
     struct NodeGradient** gradient = malloc(sizeof(*gradient) * ffnn->numLayers);
     gradient -= 1; // same indexing as Nodes

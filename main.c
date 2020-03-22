@@ -7,8 +7,6 @@
 #include "MNISTRead.h"
 
 int main() {
-    // Hand-held this tutorial in double checking NN. Values are the same
-    // https://machinelearningmastery.com/implement-backpropagation-algorithm-scratch-python/
     int layers[3] = {2, 1, 2};
     float** vals = malloc(sizeof(float*) * 3);
     float hidden1[] = {0.763774618976614, 0.13436424411240122, 0.8474337369372327};
@@ -17,12 +15,14 @@ int main() {
     vals[1] = hidden2;
 
     struct FFNN* ffnn = alloc(3, layers);
+    ffnn->softMax = 1;
     setNetwork(ffnn, vals);
     print(ffnn);
     float in[] = {1, 0};
     setInput(ffnn, in);
     forwardPass(ffnn);
     float* out = getOutput(ffnn);
+    printf("Sum: %f\n", out[0] + out[1]);
     printf("Output from forward pass: %f,%f\n", out[0], out[1]);
     
     float expected[] = {0, 1};
@@ -43,11 +43,6 @@ int main() {
 //                     int width,
 //                     int height);
 
-// float sig(float in) {
-//     return 1 / (1 + powf(M_E, -in));
-// }
-
-
 // int main() {
 //     int numImages;
 //     int width;
@@ -57,11 +52,10 @@ int main() {
     
 //     int inputLayerSize = width * height;
 //     int layers[5] = {inputLayerSize, 
-//                         inputLayerSize >> 2,
-//                         inputLayerSize >> 4,
-//                         inputLayerSize >> 6,
+//                         32,
 //                         10};
 //     struct FFNN* ffnn = alloc(3, layers);
+//     enableSoftMax(ffnn, 1);
 //     randomize(ffnn);
 //     // stochasticTrain(ffnn, imgs, labels, numImages, 0.01f);
 //     MNISTVisualStochasticTrain(ffnn, imgs, labels, numImages, 0.001f, width, height);
