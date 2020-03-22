@@ -3,6 +3,11 @@
 #include <stdint.h>
 #include "MNISTRead.h"
 
+/**
+ * Source for MNIST database files:
+ * http://yann.lecun.com/exdb/mnist/
+ */ 
+
 void flipEndian32(uint32_t* in) {
     int b0,b1,b2,b3;
     b0 = *in & 0xFF;
