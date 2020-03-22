@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include "MNISTRead.h"
 
 /**
@@ -56,11 +57,15 @@ float** readMNISTImages(uint32_t* numImages, uint32_t* width, uint32_t* height) 
 char shade(float pixel) {
     char c;
     if (pixel < 0.1)            c = ' ';
-        else if (pixel < 0.25)  c = '.';
-        else if (pixel < 0.5)   c = ':';
-        else if (pixel < 0.75)  c = '|';
-        else if (pixel < 0.9)   c = 'X';
-        else                    c = '#';
+        else if (pixel < 0.2)   c = '.';
+        else if (pixel < 0.3)   c = ':';
+        else if (pixel < 0.4)   c = '-';
+        else if (pixel < 0.5)   c = '=';
+        else if (pixel < 0.6)   c = '+';
+        else if (pixel < 0.7)   c = '*';
+        else if (pixel < 0.8)   c = '#';
+        else if (pixel < 0.9)   c = '&';
+        else                    c = '$';
     return c;
 }
 
