@@ -33,16 +33,24 @@ struct FFNN* alloc(int numLayers, int* layerSizes) {
         ffnn->forwardVals[l] = malloc(sizeof(**ffnn->forwardVals) * ffnn->layerSizes[l]);
     }
 
-    ffnn->softMax = 0;
+    setRegressional(ffnn);
 
     return ffnn;
 }
 
 /**
- * Allows softmax activation on output nodes.
+ * Indicates usage of softmax on output nodes, and cross entropy loss
  */
-void enableSoftMax(struct FFNN* ffnn, int boolEnable) {
-    ffnn->softMax = boolEnable;
+void setCategorical(struct FFNN* ffnn) {
+    ffnn->categorical = 1;
+}
+
+/**
+ * Default mode.
+ * Uses sigmoid activation throughout, and MSE cost.
+ */
+void setRegressional(struct FFNN* ffnn) {
+    ffnn->categorical = 0;
 }
 
 void randomize(struct FFNN* ffnn) {
@@ -78,7 +86,7 @@ void print(struct FFNN* ffnn) {
         if (l == 0) {
             printf("\t%d Inputs\n", numNodes);
             continue;
-        } else if (ffnn->softMax && l == ffnn->numLayers - 1) {
+        } else if (ffnn->categorical && l == ffnn->numLayers - 1) {
             puts("\tUsing Softmax Activation");
         }
         int weightsPerNode = ffnn->layerSizes[l - 1];
@@ -102,7 +110,17 @@ float quadraticCost(float* prediction, float* actual, int size) {
         float diff = prediction[i] - actual[i];
         total += diff * diff;
     }
+    // could multiply total by 2 for completeness
     return total;
+}
+
+float crossEntropyCost(float* prediction, float* actual, int size) {
+    float total = 0;
+    for (int i = 0; i < size; ++i) {
+        // could be base 2
+        total += actual[i] * logf(prediction[i]);
+    }
+    total *= -1;
 }
 
 /**
@@ -131,28 +149,29 @@ void forwardPass(struct FFNN* ffnn) {
                 accum += input * weight;
             }
             // don't apply sigmoid if softmax enabled and in output layer
-            if (!ffnn->softMax || l != ffnn->numLayers - 1) {
+            if (!ffnn->categorical || l != ffnn->numLayers - 1) {
                 accum = 1 / (1 + powf(M_E, -accum)); // sigmoid activation
             }
             A(l, j) = accum;
         }
     }
-    if (ffnn->softMax) {
-        int n = ffnn->layerSizes[ffnn->numLayers - 1];
-        float* outputs = getOutput(ffnn);
+    if (ffnn->categorical) {
+        int l = ffnn->numLayers - 1;
+        int n = ffnn->layerSizes[l];
         float denominator = 0;
-        for (int i = 0; i < n; ++i) {
-            outputs[i] = powf(M_E, -outputs[i]);
-            denominator += outputs[i];
+        for (int j = 0; j < n; ++j) {
+            A(l, j) = powf(M_E, -A(l, j));
+            denominator += A(l, j);
         }
-        for (int i = 0; i < n; ++i) {
-            outputs[i] /= denominator;
+        for (int j = 0; j < n; ++j) {
+            A(l, j) /= denominator;
         }
     }
 }
 
 /**
- * Requires a prior run of forwardPass
+ * Requires a prior run of forwardPass.
+ * Note that the negative gradient is returned (the direction that will minimize the cost).
  */
 struct NodeGradient** backwardPass(struct FFNN* ffnn, float* actual) {
     struct NodeGradient** gradient = malloc(sizeof(*gradient) * ffnn->numLayers);
@@ -170,7 +189,12 @@ struct NodeGradient** backwardPass(struct FFNN* ffnn, float* actual) {
             gradient[l][k].dBias = 0;
             float neuronOutput = ffnn->forwardVals[l][k];
             if (l == ffnn->numLayers - 1) {
-                gradient[l][k].dBias = actual[k] - neuronOutput; // output neurons
+                if (ffnn->categorical) {
+                    gradient[l][k].dBias = -actual[k] / neuronOutput
+                                                +    (1 - actual[k]) / (1 - neuronOutput);
+                } else {
+                    gradient[l][k].dBias = actual[k] - neuronOutput; // output neurons
+                }
             } else {
                 for (int j = 0; j < ffnn->layerSizes[l + 1]; ++j) {
                     float error = gradient[l + 1][j].dBias;
@@ -207,23 +231,34 @@ void applyGradient(struct FFNN* ffnn, struct NodeGradient** gradient, float lear
     }
 }
 
-void stochasticTrain(struct FFNN* ffnn,
+/**
+ * Stochastic gradient descent
+ */
+void SGD(struct FFNN* ffnn,
                     float** inputs, 
                     float** outputs, 
                     int trainingSetSize, 
-                    float learningRate) {
-    
+                    float learningRate,
+                    int epochs) {
     putchar('\n');
-    for (int i = 0; i < trainingSetSize; ++i) {
-        setInput(ffnn, inputs[i]);
-        forwardPass(ffnn);
-        struct NodeGradient** gradient = backwardPass(ffnn, outputs[i]);
-        applyGradient(ffnn, gradient, learningRate);
-        free(gradient + 1);
+    for (int e = 0; e < epochs; ++e) {
+        for (int i = 0; i < trainingSetSize; ++i) {
+            setInput(ffnn, inputs[i]);
+            forwardPass(ffnn);
+            struct NodeGradient** gradient = backwardPass(ffnn, outputs[i]);
+            applyGradient(ffnn, gradient, learningRate);
+            free(gradient + 1);
 
-        float* guess = getOutput(ffnn);
-        float cost = quadraticCost(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
+            float* guess = getOutput(ffnn);
+            float cost;
+            if (ffnn->categorical) {
+                cost = crossEntropyCost(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
+            } else {
+                cost = quadraticCost(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
+            }
 
-        printf("\033[A\33[2K\rCost:  %3.3f\n", cost);
+            printf("\033[A\33[2K\rCost: %3.3f\n", e, cost);
+
+        }
     }
 }

@@ -32,12 +32,15 @@ struct FFNN {
     float** forwardVals; // outputs from each node after forward pass
 
     // boolean indicating usage of softmax on output nodes
-    int softMax;
+    // and cross entropy for cost
+    int categorical;
 };
 
 struct FFNN* alloc(int numLayers, int* layerSizes);
 
-void enableSoftMax(struct FFNN* ffnn, int boolEnable);
+void setCategorical(struct FFNN* ffnn);
+
+void setRegressional(struct FFNN* ffnn);
 
 void randomize(struct FFNN* ffnn);
 
@@ -57,10 +60,11 @@ struct NodeGradient** backwardPass(struct FFNN* ffnn, float* actual);
 
 void applyGradient(struct FFNN* ffnn, struct NodeGradient** gradient, float learningRate);
 
-void stochasticTrain(struct FFNN* ffnn,
+void SGD(struct FFNN* ffnn,
                     float** inputs, 
                     float** outputs, 
                     int trainingSetSize, 
-                    float learningRate);
+                    float learningRate,
+                    int epochs);
 
 #endif
