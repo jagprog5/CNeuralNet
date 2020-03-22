@@ -30,9 +30,14 @@ struct FFNN {
     struct Node** nodes;
 
     float** forwardVals; // outputs from each node after forward pass
+
+    // boolean indicating usage of softmax on output nodes
+    int softMax;
 };
 
 struct FFNN* alloc(int numLayers, int* layerSizes);
+
+void enableSoftMax(struct FFNN* ffnn, int boolEnable);
 
 void randomize(struct FFNN* ffnn);
 
