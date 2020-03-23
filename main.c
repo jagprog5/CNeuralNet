@@ -6,6 +6,8 @@
 #include "FFNN.h"
 #include "MNISTRead.h"
 
+#define DEMOTYPE 1 // set this to 1 or 0
+
 void MNISTVisualSGD(struct FFNN* ffnn,
                     float** inputs, 
                     float** outputs, 
@@ -18,8 +20,11 @@ int main() {
     int numImages;
     int width;
     int height;
-    float** imgs = readMNISTImages(&numImages, &width, &height);
-    float** labels = readMNISTLabels(&numImages);
+    if (!DEMOTYPE) {
+        puts("============Training Set============");
+    }
+    float** imgs = readMNISTTrainingImages(&numImages, &width, &height);
+    float** labels = readMNISTTrainingLabels(&numImages);
     
     int inputLayerSize = width * height;
     int layerSizes[3] = {inputLayerSize, 
@@ -27,20 +32,25 @@ int main() {
                         10};
     struct FFNN* ffnn = allocFFNN(3, layerSizes);
     randomize(ffnn);
-    setCategorical(ffnn);
-    MNISTVisualSGD(ffnn, imgs, labels, numImages, 0.01f, width, height);
-    // SGD(ffnn, imgs, labels, numImages, 0.01f);
-    freeFFNN(ffnn);
-    for (int i = 0; i < numImages; ++i) {
-        free(imgs[i]);
-        free(labels[i]);
+    setClassifier(ffnn);
+
+    if (DEMOTYPE) {
+        MNISTVisualSGD(ffnn, imgs, labels, numImages, 0.01f, width, height);
+    } else {
+        SGD(ffnn, imgs, labels, numImages, 0.01f);
+        test(ffnn, imgs, labels, numImages);
+        freeSet(imgs, labels, numImages);
+        puts("==============Test Set==============");
+        imgs = readMNISTTestImages(&numImages, &width, &height);
+        labels = readMNISTTestLabels(&numImages);
+        test(ffnn, imgs, labels, numImages);
+
     }
-    free(imgs);
-    free(labels);
+    freeFFNN(ffnn);
+    freeSet(imgs, labels, numImages);
 
     return 0;
 }
-
 
 void MNISTVisualSGD(struct FFNN* ffnn,
                     float** inputs, 
@@ -51,7 +61,7 @@ void MNISTVisualSGD(struct FFNN* ffnn,
                     int height) {
 
     puts("========Training========");
-    int numLines = height + 6;
+    int numLines = height + 5;
     for (int i = 0; i < numLines; ++i) {
         putchar('\n');
     }
@@ -61,6 +71,7 @@ void MNISTVisualSGD(struct FFNN* ffnn,
         forwardPass(ffnn);
         struct Node** gradient = backwardPass(ffnn, outputs[i]);
         applyGradient(ffnn, gradient, learningRate);
+        // gradient freed below
 
         // =========
         // Everything after this is a visual addition to the SGD function in FFNN.c
@@ -72,7 +83,6 @@ void MNISTVisualSGD(struct FFNN* ffnn,
         }
 
         float* guess = getOutput(ffnn);
-        float cost = quadraticCost(guess, outputs[i], 10);
 
         char* imgStr = getImgStr(inputs[i], width, height);
         puts(imgStr);
@@ -81,26 +91,21 @@ void MNISTVisualSGD(struct FFNN* ffnn,
 
         int goodIndex = -1;
         for (int j = 0; j < 10; ++j) {
-            if (outputs[i][j]==1) {
+            if (outputs[i][j]) {
                 goodIndex = j;
             }
             putchar(shade(outputs[i][j]));
         }
         putchar('\n');
         printf("Probs: ");
-        float max = 0;
-        int guessIndex = -1;
         for (int j = 0; j < 10; ++j) {
-            if (guess[j] > max) {
-                max = guess[j];
-                guessIndex = j;
-            }
             putchar(shade(guess[j]));
         }
+        int guessIndex = maxIndex(guess, 10);
         printf("  %d of %d\n", (i + 1), trainingSetSize);
         printf("Final: ");
         for (int j = 0; j < 10; ++j) {
-            putchar(shade(j==guessIndex ? 1 : 0));
+            putchar(shade(j==guessIndex ? guess[j] : 0));
         }
 
         if (guessIndex == goodIndex) {
@@ -108,8 +113,9 @@ void MNISTVisualSGD(struct FFNN* ffnn,
         } else {
             puts("\033[0;31m  BAD!\033[0m");
         }
-        
-        putchar('\n');
+
+        // assuming classifier for MNIST
+        float cost = crossEntropyCost(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
         printf("Cost: %.3f\n", cost);
 
         freeNodes(gradient, ffnn->numLayers, ffnn->layerSizes);
