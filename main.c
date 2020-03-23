@@ -85,6 +85,7 @@ void MNISTVisualSGD(struct FFNN* ffnn,
 
         char* imgStr = getImgStr(inputs[i], width, height);
         puts(imgStr);
+        free(imgStr);
         printf("       0123456789\nLabel: ");
         int goodIndex = -1;
         for (int j = 0; j < 10; ++j) {
