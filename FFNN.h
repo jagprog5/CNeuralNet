@@ -28,12 +28,12 @@ struct FFNN {
 
     // boolean indicating usage of softmax on output nodes
     // and cross entropy for cost
-    int categorical;
+    int classifier;
 };
 
 struct FFNN* allocFFNN(int numLayers, int* layerSizes);
 
-void setCategorical(struct FFNN* ffnn);
+void setClassifier(struct FFNN* ffnn);
 
 void setRegressional(struct FFNN* ffnn);
 
@@ -49,7 +49,11 @@ void forwardPass(struct FFNN* ffnn);
 
 float* getOutput(struct FFNN* ffnn);
 
+int maxIndex(float* in, int num);
+
 float quadraticCost(float* prediction, float* actual, int size);
+
+float crossEntropyCost(float* prediction, float* actual, int size);
 
 struct Node** backwardPass(struct FFNN* ffnn, float* actual);
 
@@ -61,10 +65,14 @@ void SGD(struct FFNN* ffnn,
                     int trainingSetSize, 
                     float learningRate);
 
+void test(struct FFNN* ffnn, float** inputs, float** outputs, int setSize);
+
 struct Node** allocNodes(int numLayers, int* layerSizes);
 
 void freeNodes(struct Node** nodes, int numLayers, int* layerSizes);
 
 void freeFFNN(struct FFNN* ffnn);
+
+void freeSet(float** inputs, float** outputs, int setSize);
 
 #endif

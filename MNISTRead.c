@@ -23,8 +23,8 @@ void readFlipEndian32(FILE* fp, uint32_t* input) {
     flipEndian32(input);
 }
 
-float** readMNISTImages(uint32_t* numImages, uint32_t* width, uint32_t* height) {
-    FILE* fp = fopen(TRAINING_IMAGES, "rb");
+float** readMNISTImages(char* path, uint32_t* numImages, uint32_t* width, uint32_t* height) {
+    FILE* fp = fopen(path, "rb");
     if (fp==NULL) {
         puts("Error opening file!");
         return NULL;
@@ -41,17 +41,63 @@ float** readMNISTImages(uint32_t* numImages, uint32_t* width, uint32_t* height) 
     uint8_t* imgsBytes = malloc(sizeof(*imgsBytes) * imgsDataLen);
     fread(imgsBytes, sizeof(*imgsBytes), imgsDataLen, fp);
 
+    putchar('\n');
     for (uint32_t i = 0; i < *numImages; ++i) {
         uint32_t imgDataLen = *width * *height;
         imgsOutput[i] = malloc(sizeof(float) * imgDataLen);
         for (int j = 0; j < imgDataLen; ++j) {
             imgsOutput[i][j] = (float)imgsBytes[j + i * imgDataLen] / 0xFF;
         }
+        printf("\033[A\33[2K\rReading Imgs: %d\n", i + 1);
     }
 
     fclose(fp);
     free(imgsBytes);
     return imgsOutput;
+}
+
+float** readMNISTLabels(char* path, uint32_t* numLabels) {
+    FILE* fp = fopen(path, "rb");
+    if (fp==NULL) {
+        puts("Error opening file!");
+        return NULL;
+    }
+
+    uint32_t magicNumber;
+    readFlipEndian32(fp, &magicNumber);
+    readFlipEndian32(fp, numLabels);
+
+    uint8_t* labels = malloc(sizeof(*labels) * *numLabels);
+    fread(labels, sizeof(*labels), *numLabels, fp);
+
+    float** outputs = malloc(sizeof(*outputs) * *numLabels);
+
+    putchar('\n');
+    for (uint32_t i = 0; i < *numLabels; ++i) {
+        outputs[i] = calloc(10, sizeof(float));
+        outputs[i][labels[i]] = 1;
+        printf("\033[A\33[2K\rReading Labels: %d\n", i + 1);
+    }
+
+    fclose(fp);
+    free(labels);
+    return outputs;
+}
+
+float** readMNISTTrainingImages(uint32_t* numImages, uint32_t* width, uint32_t* height) {
+    return readMNISTImages(TRAINING_IMAGES, numImages, width, height);
+}
+
+float** readMNISTTestImages(uint32_t* numImages, uint32_t* width, uint32_t* height) {
+    return readMNISTImages(TEST_IMAGES, numImages, width, height);
+}
+
+float** readMNISTTrainingLabels(uint32_t* numLabels) {
+    return readMNISTLabels(TRAINING_LABELS, numLabels);
+}
+
+float** readMNISTTestLabels(uint32_t* numLabels) {
+    return readMNISTLabels(TEST_LABELS, numLabels);
 }
 
 char shade(float pixel) {
@@ -86,30 +132,4 @@ char* getImgStr(float* MNISTImage, uint32_t width, uint32_t height) {
         }
     }
     return out;
-}
-
-float** readMNISTLabels(uint32_t* numLabels) {
-    FILE* fp = fopen(TRAINING_LABELS, "rb");
-    if (fp==NULL) {
-        puts("Error opening file!");
-        return NULL;
-    }
-
-    uint32_t magicNumber;
-    readFlipEndian32(fp, &magicNumber);
-    readFlipEndian32(fp, numLabels);
-
-    uint8_t* labels = malloc(sizeof(*labels) * *numLabels);
-    fread(labels, sizeof(*labels), *numLabels, fp);
-
-    float** outputs = malloc(sizeof(*outputs) * *numLabels);
-
-    for (uint32_t i = 0; i < *numLabels; ++i) {
-        outputs[i] = calloc(10, sizeof(float));
-        outputs[i][labels[i]] = 1;
-    }
-
-    fclose(fp);
-    free(labels);
-    return outputs;
 }

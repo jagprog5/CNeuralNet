@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <time.h>
 #include "FFNN.h"
 
 /**
@@ -29,8 +30,8 @@ struct FFNN* allocFFNN(int numLayers, int* layerSizes) {
 /**
  * Indicates usage of softmax on output nodes, and cross entropy loss
  */
-void setCategorical(struct FFNN* ffnn) {
-    ffnn->categorical = 1;
+void setClassifier(struct FFNN* ffnn) {
+    ffnn->classifier = 1;
 }
 
 /**
@@ -38,10 +39,15 @@ void setCategorical(struct FFNN* ffnn) {
  * Uses sigmoid activation throughout (including output nodes), and MSE cost.
  */
 void setRegressional(struct FFNN* ffnn) {
-    ffnn->categorical = 0;
+    ffnn->classifier = 0;
 }
 
 void randomize(struct FFNN* ffnn) {
+    static int needSeeding = 1;
+    if (needSeeding) {
+        needSeeding = 0;
+        srand(time(NULL));
+    }
     for (int l = 1; l < ffnn->numLayers; ++l) {
         float scaleDown = ffnn->layerSizes[l - 1] + 1;
         for (int j = 0; j < ffnn->layerSizes[l]; ++j) {
@@ -79,7 +85,7 @@ void print(struct FFNN* ffnn) {
         if (l == 0) {
             printf("\t%d Inputs\n", numNodes);
             continue;
-        } else if (ffnn->categorical && l == ffnn->numLayers - 1) {
+        } else if (ffnn->classifier && l == ffnn->numLayers - 1) {
             puts("\tUsing Softmax Activation");
         }
         int weightsPerNode = ffnn->layerSizes[l - 1];
@@ -103,14 +109,12 @@ float quadraticCost(float* prediction, float* actual, int size) {
         float diff = prediction[i] - actual[i];
         total += diff * diff;
     }
-    // could multiply total by 2 for completeness
     return total;
 }
 
 float crossEntropyCost(float* prediction, float* actual, int size) {
     float total = 0;
     for (int i = 0; i < size; ++i) {
-        // could be base 2
         total += actual[i] * logf(prediction[i]);
     }
     total *= -1;
@@ -133,6 +137,22 @@ float* getOutput(struct FFNN* ffnn) {
     return ffnn->forwardVals[ffnn->numLayers - 1];
 }
 
+/**
+ * Assumes all indexes contain positive values
+ * Returns index of greatest value
+ */
+int maxIndex(float* in, int num) {
+    float max = 0;
+    int index = -1;
+    for (int i = 0; i < num; ++i) {
+        if (in[i] > max) {
+            max = in[i];
+            index = i;
+        }
+    }
+    return index;
+}
+
 void forwardPass(struct FFNN* ffnn) {
     for (int l = 1; l < ffnn->numLayers; ++l) {
         for (int j = 0; j < ffnn->layerSizes[l]; ++j) {
@@ -143,13 +163,13 @@ void forwardPass(struct FFNN* ffnn) {
                 accum += input * weight;
             }
             // don't apply sigmoid if softmax enabled and in output layer
-            if (!ffnn->categorical || l != ffnn->numLayers - 1) {
+            if (!ffnn->classifier || l != ffnn->numLayers - 1) {
                 accum = 1 / (1 + powf(M_E, -accum)); // sigmoid activation
             }
             A(l, j) = accum;
         }
     }
-    if (ffnn->categorical) {
+    if (ffnn->classifier) {
         int l = ffnn->numLayers - 1;
         int n = ffnn->layerSizes[l];
         float denominator = 0;
@@ -175,7 +195,7 @@ struct Node** backwardPass(struct FFNN* ffnn, float* actual) {
             gradient[l][k].bias = 0;
             float neuronOutput = ffnn->forwardVals[l][k];
             if (l == ffnn->numLayers - 1) {
-                if (ffnn->categorical) {
+                if (ffnn->classifier) {
                     gradient[l][k].bias = -actual[k] / neuronOutput
                                                 +    (1 - actual[k]) / (1 - neuronOutput);
                 } else {
@@ -235,14 +255,31 @@ void SGD(struct FFNN* ffnn,
 
         float* guess = getOutput(ffnn);
         float cost;
-        if (ffnn->categorical) {
+        if (ffnn->classifier) {
             cost = crossEntropyCost(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
         } else {
             cost = quadraticCost(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
         }
+        printf("\033[A\33[2K\rTraining: %d\n", (i + 1));
+    }
+}
 
-        printf("\033[A\33[2K\rCost: %3.3f,   %d of %d\n", cost, (i + 1), trainingSetSize);
-
+void test(struct FFNN* ffnn, float** inputs, float** outputs, int setSize) {
+    putchar('\n');
+    int errorCount = 0;
+    int numOutputs = ffnn->layerSizes[ffnn->numLayers - 1];
+    for (int i = 0; i < setSize; ++i) {
+        setInput(ffnn, inputs[i]);
+        forwardPass(ffnn);
+        int guessIndex = maxIndex(getOutput(ffnn), numOutputs);
+        int goodIndex = maxIndex(outputs[i], numOutputs);
+        if (guessIndex != goodIndex) {
+            errorCount += 1;
+        }
+        printf("\033[A\33[2K\rError Rate: %.2f%% (%d)\n",
+                            100 * (float)errorCount / (i + 1),
+                            i + 1,
+                            setSize);
     }
 }
 
@@ -279,4 +316,13 @@ void freeFFNN(struct FFNN* ffnn) {
         free(ffnn->forwardVals[l]);
     }
     free(ffnn->forwardVals);
+}
+
+void freeSet(float** inputs, float** outputs, int setSize) {
+    for (int i = 0; i < setSize; ++i) {
+        free(inputs[i]);
+        free(outputs[i]);
+    }
+    free(inputs);
+    free(outputs);
 }
