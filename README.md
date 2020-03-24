@@ -5,7 +5,7 @@
 # C Neural Network
 
 * [Classifies the MNIST handwritten digit database](http://yann.lecun.com/exdb/mnist/)
-* Typical error rate of 7-8%
+* This network typically has an error rate of 7-8%
 * 32 nodes in hidden layer
 * Uses softmax activation on output nodes, and cross entropy loss function for training
 
