@@ -18,6 +18,8 @@ float** readMNISTTrainingLabels(uint32_t* numLabels);
 
 float** readMNISTTestLabels(uint32_t* numLabels);
 
+void freeSet(float** inputs, float** outputs, int setSize);
+
 char shade(float pixel);
 
 char* getImgStr(float* MNISTImage, uint32_t width, uint32_t height);
