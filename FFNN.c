@@ -4,6 +4,7 @@
 #include <math.h>
 #include <time.h>
 #include "FFNN.h"
+#include "printReducer.h"
 
 /**
  * layerSizes is shallow copied, but not modified. It will also not be freed by freeFFNN
@@ -260,7 +261,8 @@ void SGD(struct FFNN* ffnn,
         } else {
             cost = quadraticCost(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
         }
-        printf("\033[A\33[2K\rTraining: %d\n", (i + 1));
+        prt_redu(i, 100, 
+        printf("\033[A\33[2K\rTraining: %d\n", (i + 1));)
     }
 }
 
@@ -276,10 +278,11 @@ void test(struct FFNN* ffnn, float** inputs, float** outputs, int setSize) {
         if (guessIndex != goodIndex) {
             errorCount += 1;
         }
+        prt_redu(i, 100, 
         printf("\033[A\33[2K\rError Rate: %.2f%% (%d)\n",
                             100 * (float)errorCount / (i + 1),
                             i + 1,
-                            setSize);
+                            setSize);)
     }
 }
 

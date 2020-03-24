@@ -5,6 +5,7 @@
 #include <math.h>
 #include "FFNN.h"
 #include "MNISTRead.h"
+#include "printReducer.h"
 
 void MNISTVisualSGD(struct FFNN* ffnn,
                     float** inputs, 
@@ -76,6 +77,7 @@ void MNISTVisualSGD(struct FFNN* ffnn,
         // Everything after this is a visual addition to the SGD function in FFNN.c
         // Make sure to have the terminal window tall enough!
 
+        prt_redu(i, 200,
         for (int j = 0; j < numLines; ++j) {
             // clear screen
             printf("\033[A\33[2K\r");
@@ -110,7 +112,7 @@ void MNISTVisualSGD(struct FFNN* ffnn,
             puts("\033[0;32m  GOOD\033[0m");
         } else {
             puts("\033[0;31m  BAD!\033[0m");
-        }
+        })
 
         freeNodes(gradient, ffnn->numLayers, ffnn->layerSizes);
     }
