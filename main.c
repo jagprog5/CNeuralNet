@@ -77,7 +77,7 @@ void MNISTVisualSGD(struct FFNN* ffnn,
         // Everything after this is a visual addition to the SGD function in FFNN.c
         // Make sure to have the terminal window tall enough!
 
-        prt_redu(i, 200,
+        prt_redu(i, 300,
         for (int j = 0; j < numLines; ++j) {
             // clear screen
             printf("\033[A\33[2K\r");
