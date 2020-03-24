@@ -17,7 +17,7 @@ Properties of this network:
 
 In the gif:
 * "Label" shows the image's correct corresponding digit, as given in the database
-* "Probs" shows the neural networks output as probabilities for each digit
+* "Probs" shows the networks output as probabilities for each digit
 * "Final" shows the network's output with the highest probability, its final guess
 
 Use the commands:
