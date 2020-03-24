@@ -1,4 +1,5 @@
-![Demo](https://github.com/jagprog5/GameFrameworkDemo/blob/master/_demo.gif)
+![Demo](https://github.com/jagprog5/CNeuralNet/blob/master/_demo.gif)
+
 <sup>Gif was edited for brevity. Completes in less than 1 minute.</sup>
 
 # C Neural Network
