@@ -12,6 +12,8 @@
   * Cross entropy loss and stochastic gradient descent for training
   * Typically has an error rate of 7-8%
 
+The program is general and allows for arbitrarily sized networks (within reason).
+
 Use the commands:
 * `make run` to compile and run
 * `make run_reduced` to compile and run with reduced output
