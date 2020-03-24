@@ -18,11 +18,11 @@ run_reduced: all
 cneuralnet: main.o FFNN.o MNISTRead.o
 	$(CC) -o cneuralnet $^ -lm
 
-main.o: main.c FFNN.h MNISTRead.h
+main.o: main.c FFNN.h MNISTRead.h printReducer.h
 	$(CC) -o $@ -c $<
 
-FFNN.o: FFNN.c FFNN.h
+FFNN.o: FFNN.c FFNN.h printReducer.h
 	$(CC) -o $@ -c $< -lm
 
-MNISTRead.o: MNISTRead.c MNISTRead.h
+MNISTRead.o: MNISTRead.c MNISTRead.h printReducer.h
 	$(CC) -o $@ -c $<

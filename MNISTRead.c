@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "MNISTRead.h"
+#include "printReducer.h"
 
 /**
  * Source for MNIST database files:
@@ -48,7 +49,7 @@ float** readMNISTImages(char* path, uint32_t* numImages, uint32_t* width, uint32
         for (int j = 0; j < imgDataLen; ++j) {
             imgsOutput[i][j] = (float)imgsBytes[j + i * imgDataLen] / 0xFF;
         }
-        printf("\033[A\33[2K\rReading Imgs: %d\n", i + 1);
+        prt_redu(i, 100, printf("\033[A\33[2K\rReading Imgs: %d\n", i + 1);)
     }
 
     fclose(fp);
@@ -76,7 +77,7 @@ float** readMNISTLabels(char* path, uint32_t* numLabels) {
     for (uint32_t i = 0; i < *numLabels; ++i) {
         outputs[i] = calloc(10, sizeof(float));
         outputs[i][labels[i]] = 1;
-        printf("\033[A\33[2K\rReading Labels: %d\n", i + 1);
+        prt_redu(i, 100, printf("\033[A\33[2K\rReading Labels: %d\n", i + 1);)
     }
 
     fclose(fp);
