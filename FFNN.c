@@ -317,12 +317,3 @@ void freeFFNN(struct FFNN* ffnn) {
     }
     free(ffnn->forwardVals);
 }
-
-void freeSet(float** inputs, float** outputs, int setSize) {
-    for (int i = 0; i < setSize; ++i) {
-        free(inputs[i]);
-        free(outputs[i]);
-    }
-    free(inputs);
-    free(outputs);
-}

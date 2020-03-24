@@ -100,6 +100,15 @@ float** readMNISTTestLabels(uint32_t* numLabels) {
     return readMNISTLabels(TEST_LABELS, numLabels);
 }
 
+void freeSet(float** inputs, float** outputs, int setSize) {
+    for (int i = 0; i < setSize; ++i) {
+        free(inputs[i]);
+        free(outputs[i]);
+    }
+    free(inputs);
+    free(outputs);
+}
+
 char shade(float pixel) {
     char c;
     if (pixel < 0.1)            c = ' ';

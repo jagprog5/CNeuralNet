@@ -73,6 +73,4 @@ void freeNodes(struct Node** nodes, int numLayers, int* layerSizes);
 
 void freeFFNN(struct FFNN* ffnn);
 
-void freeSet(float** inputs, float** outputs, int setSize);
-
 #endif
