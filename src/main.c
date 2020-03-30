@@ -101,8 +101,8 @@ void MNISTVisualSGD(struct FFNN* ffnn,
             putchar(shade(guess[j]));
         }
         // assuming classifier for MNIST
-        float cost = crossEntropyCost(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
-        printf("  Cost: %.3f\nFinal: ", cost);
+        float loss = crossEntropyLoss(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
+        printf("  Loss: %.3f\nFinal: ", loss);
         int guessIndex = maxIndex(guess, 10);        
         for (int j = 0; j < 10; ++j) {
             putchar(shade(j==guessIndex ? guess[j] : 0));
