@@ -1,28 +1,33 @@
-CC=cc
+BUILDDIR = build
+SOURCEDIR = src
+HEADERDIR = headers
 
-all: cneuralnet
+SOURCES = $(wildcard $(SOURCEDIR)/*.c)
+OBJECTS = $(patsubst $(SOURCEDIR)/%.c,$(BUILDDIR)/%.o,$(SOURCES))
+
+CFLAGS = -lm
+EXECUTABLE = $(BUILDDIR)/cneuralnet
+
+
+.PHONY: all clean run run_visual run_reduced
+
+all: $(EXECUTABLE)
+
+$(EXECUTABLE): $(OBJECTS)
+	$(CC) $(CFLAGS) -I$(HEADERDIR) $^ -o $@
+
+$(BUILDDIR)/%.o: $(SOURCEDIR)/%.c
+	$(CC) $(CFLAGS) -I$(HEADERDIR) -c $< -o $@
 
 clean:
-	rm -vf *.o cneuralnet
+	rm -vf $(EXECUTABLE) $(OBJECTS)
 
 run: all
-	./cneuralnet
+	$(EXECUTABLE)
 
 # default is visual
 run_visual: all
-	./cneuralnet 1
+	./$(EXECUTABLE) 1
 
 run_reduced: all
-	./cneuralnet 0
-
-cneuralnet: main.o FFNN.o MNISTRead.o
-	$(CC) -o cneuralnet $^ -lm
-
-main.o: main.c FFNN.h MNISTRead.h printReducer.h
-	$(CC) -o $@ -c $<
-
-FFNN.o: FFNN.c FFNN.h printReducer.h
-	$(CC) -o $@ -c $< -lm
-
-MNISTRead.o: MNISTRead.c MNISTRead.h printReducer.h
-	$(CC) -o $@ -c $<
+	./$(EXECUTABLE) 0
