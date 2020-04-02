@@ -37,7 +37,7 @@ void setClassifier(struct FFNN* ffnn) {
 
 /**
  * Default mode.
- * Uses sigmoid activation throughout (including output nodes), and MSE cost.
+ * Uses sigmoid activation throughout (including output nodes), and MSE loss.
  */
 void setRegressional(struct FFNN* ffnn) {
     ffnn->classifier = 0;
@@ -104,7 +104,7 @@ void print(struct FFNN* ffnn) {
     puts("===============================================================");
 }
 
-float quadraticCost(float* prediction, float* actual, int size) {
+float quadraticLoss(float* prediction, float* actual, int size) {
     float total = 0;
     for (int i = 0; i < size; ++i) {
         float diff = prediction[i] - actual[i];
@@ -113,7 +113,7 @@ float quadraticCost(float* prediction, float* actual, int size) {
     return total;
 }
 
-float crossEntropyCost(float* prediction, float* actual, int size) {
+float crossEntropyLoss(float* prediction, float* actual, int size) {
     float total = 0;
     for (int i = 0; i < size; ++i) {
         total += actual[i] * logf(prediction[i]);
@@ -186,7 +186,7 @@ void forwardPass(struct FFNN* ffnn) {
 
 /**
  * Requires a prior run of forwardPass.
- * Note that the negative gradient is returned (the direction that will minimize the cost).
+ * Note that the negative gradient is returned (the direction that will minimize the loss).
  */
 struct Node** backwardPass(struct FFNN* ffnn, float* actual) {
     struct Node** gradient = allocNodes(ffnn->numLayers, ffnn->layerSizes);
@@ -255,11 +255,11 @@ void SGD(struct FFNN* ffnn,
         freeNodes(gradient, ffnn->numLayers, ffnn->layerSizes);
 
         float* guess = getOutput(ffnn);
-        float cost;
+        float loss;
         if (ffnn->classifier) {
-            cost = crossEntropyCost(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
+            loss = crossEntropyLoss(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
         } else {
-            cost = quadraticCost(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
+            loss = quadraticLoss(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
         }
         prt_redu(i, 100, 
         printf("\033[A\33[2K\rTraining: %d\n", (i + 1));)

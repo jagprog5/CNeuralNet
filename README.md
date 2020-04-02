@@ -1,4 +1,4 @@
-<img src="https://github.com/jagprog5/CNeuralNet/blob/master/_demo.gif" height="400">
+<img src="https://github.com/jagprog5/CNeuralNet/blob/master/reasources/_demo.gif" height="400">
 
 <sup>Gif was edited for brevity. The program still usually completes in less than 1 minute.</sup>
 

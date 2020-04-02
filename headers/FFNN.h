@@ -51,9 +51,9 @@ float* getOutput(struct FFNN* ffnn);
 
 int maxIndex(float* in, int num);
 
-float quadraticCost(float* prediction, float* actual, int size);
+float quadraticLoss(float* prediction, float* actual, int size);
 
-float crossEntropyCost(float* prediction, float* actual, int size);
+float crossEntropyLoss(float* prediction, float* actual, int size);
 
 struct Node** backwardPass(struct FFNN* ffnn, float* actual);
 
