@@ -63,7 +63,6 @@ void randomize(struct FFNN* ffnn) {
 /**
  * vals is deep copied.
  * vals[l] points to the weights and biases for layer l + 1 (since l=0 has no weights or biases)
- * 
  */
 void setNetwork(struct FFNN* ffnn, float** vals) {
     vals -= 1;
@@ -76,32 +75,6 @@ void setNetwork(struct FFNN* ffnn, float** vals) {
             }
         }
     }
-}
-
-void print(struct FFNN* ffnn) {
-    puts("====================Feed Forward Neural Network=================");
-    for (int l = 0; l < ffnn->numLayers; ++l) {
-        printf("Layer %d\n", l);
-        int numNodes = ffnn->layerSizes[l];
-        if (l == 0) {
-            printf("\t%d Inputs\n", numNodes);
-            continue;
-        } else if (ffnn->classifier && l == ffnn->numLayers - 1) {
-            puts("\tUsing Softmax Activation");
-        }
-        int weightsPerNode = ffnn->layerSizes[l - 1];
-        for (int j = 0; j < numNodes; ++j) {
-            printf("\tNode %d\n", j);
-            float bias = B(l, j);
-            printf("\t\tB: %f", bias);
-            for (int k = 0; k < weightsPerNode; ++k) {
-                float weight = W(l, j, k);
-                printf(", W%d: %f", k, weight);
-            }
-            putchar('\n');
-        }
-    }
-    puts("===============================================================");
 }
 
 float quadraticLoss(float* prediction, float* actual, int size) {
@@ -136,22 +109,6 @@ void setInput(struct FFNN* ffnn, float* inputs) {
  */
 float* getOutput(struct FFNN* ffnn) {
     return ffnn->forwardVals[ffnn->numLayers - 1];
-}
-
-/**
- * Assumes all indexes contain positive values
- * Returns index of greatest value
- */
-int maxIndex(float* in, int num) {
-    float max = 0;
-    int index = -1;
-    for (int i = 0; i < num; ++i) {
-        if (in[i] > max) {
-            max = in[i];
-            index = i;
-        }
-    }
-    return index;
 }
 
 void forwardPass(struct FFNN* ffnn) {
@@ -261,28 +218,7 @@ void SGD(struct FFNN* ffnn,
         } else {
             loss = quadraticLoss(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
         }
-        prt_redu(i, 100, 
-        printf("\033[A\33[2K\rTraining: %d\n", (i + 1));)
-    }
-}
-
-void test(struct FFNN* ffnn, float** inputs, float** outputs, int setSize) {
-    putchar('\n');
-    int errorCount = 0;
-    int numOutputs = ffnn->layerSizes[ffnn->numLayers - 1];
-    for (int i = 0; i < setSize; ++i) {
-        setInput(ffnn, inputs[i]);
-        forwardPass(ffnn);
-        int guessIndex = maxIndex(getOutput(ffnn), numOutputs);
-        int goodIndex = maxIndex(outputs[i], numOutputs);
-        if (guessIndex != goodIndex) {
-            errorCount += 1;
-        }
-        prt_redu(i, 100, 
-        printf("\033[A\33[2K\rError Rate: %.2f%% (%d)\n",
-                            100 * (float)errorCount / (i + 1),
-                            i + 1,
-                            setSize);)
+        prt_redu(i, 100, printf("\033[A\33[2K\rTraining: %d\n", i);)
     }
 }
 

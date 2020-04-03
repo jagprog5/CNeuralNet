@@ -4,6 +4,7 @@
 #include <string.h>
 #include "MNISTRead.h"
 #include "printReducer.h"
+#include "asciiPixel.h"
 
 /**
  * Source for MNIST database files:
@@ -49,7 +50,7 @@ float** readMNISTImages(char* path, uint32_t* numImages, uint32_t* width, uint32
         for (int j = 0; j < imgDataLen; ++j) {
             imgsOutput[i][j] = (float)imgsBytes[j + i * imgDataLen] / 0xFF;
         }
-        prt_redu(i, 100, printf("\033[A\33[2K\rReading Imgs: %d\n", i + 1);)
+        prt_redu(i + 1, 100, printf("\033[A\33[2K\rReading Imgs: %d\n", i + 1);)
     }
 
     fclose(fp);
@@ -77,7 +78,7 @@ float** readMNISTLabels(char* path, uint32_t* numLabels) {
     for (uint32_t i = 0; i < *numLabels; ++i) {
         outputs[i] = calloc(10, sizeof(float));
         outputs[i][labels[i]] = 1;
-        prt_redu(i, 100, printf("\033[A\33[2K\rReading Labels: %d\n", i + 1);)
+        prt_redu(i + 1, 100, printf("\033[A\33[2K\rReading Labels: %d\n", i + 1);)
     }
 
     fclose(fp);
@@ -110,36 +111,16 @@ void freeSet(float** inputs, float** outputs, int setSize) {
     free(outputs);
 }
 
-char shade(float pixel) {
-    char c;
-    if (pixel < 0.1)            c = ' ';
-        else if (pixel < 0.2)   c = '.';
-        else if (pixel < 0.3)   c = ':';
-        else if (pixel < 0.4)   c = '-';
-        else if (pixel < 0.5)   c = '=';
-        else if (pixel < 0.6)   c = '+';
-        else if (pixel < 0.7)   c = '*';
-        else if (pixel < 0.8)   c = '#';
-        else if (pixel < 0.9)   c = '&';
-        else                    c = '$';
-    return c;
-}
-
-char* getImgStr(float* MNISTImage, uint32_t width, uint32_t height) {
-                                    // +height for each newline char
-
-    char* out = malloc(sizeof(*out) * (width * height + height));
-
-    int imgWalk = 0;
-    int outWalk = 0;
-    while (imgWalk < width * height) {
-        float pixel = MNISTImage[imgWalk++];
-        char c = shade(pixel);
-        out[outWalk++] = c;
-
-        if (imgWalk % width == 0) {
-            out[outWalk++] = '\n';
+char* getImgStr(float* MNISTImage, int width, int height) {
+    int realWidth = width + 1;
+    char* out = malloc(sizeof(*out) * (realWidth * height + 1));
+    for (int j = 0; j < height; ++j) {
+        for (int i = 0; i < width; ++i) {
+            float pixel = MNISTImage[i + j * width];
+            out[i + j * realWidth] = shade(pixel);
         }
+        out[(j + 1) * realWidth - 1] = '\n';
     }
+    out[realWidth * height] = '\0';
     return out;
 }

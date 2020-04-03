@@ -31,3 +31,6 @@ run_visual: all
 
 run_reduced: all
 	./$(EXECUTABLE) 0
+
+run_progression: all
+	./$(EXECUTABLE) 2

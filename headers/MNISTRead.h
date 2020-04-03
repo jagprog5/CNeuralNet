@@ -6,6 +6,8 @@
 #define TEST_IMAGES "./reasources/t10k-images-idx3-ubyte"
 #define TEST_LABELS "./reasources/t10k-labels-idx1-ubyte"
 
+#include <stdint.h>
+
 float** readMNISTTrainingImages(uint32_t* numImages, uint32_t* width, uint32_t* height);
 
 float** readMNISTTestImages(uint32_t* numImages, uint32_t* width, uint32_t* height);
@@ -16,8 +18,6 @@ float** readMNISTTestLabels(uint32_t* numLabels);
 
 void freeSet(float** inputs, float** outputs, int setSize);
 
-char shade(float pixel);
-
-char* getImgStr(float* MNISTImage, uint32_t width, uint32_t height);
+char* getImgStr(float* MNISTImage, int width, int height);
 
 #endif
