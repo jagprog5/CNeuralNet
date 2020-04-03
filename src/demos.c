@@ -145,20 +145,17 @@ void demoProgression(int nodeID) {
         applyGradient(ffnn, gradient, 0.01f);
         freeNodes(gradient, ffnn->numLayers, ffnn->layerSizes);
 
-        prt_redu(i + 1, 300,
-        if ((i + 1) % 10 == 0) {
-            for (int j = 0; j < numLines; ++j) {
-                // clear screen
-                printf("\033[A\33[2K\r");
-            }
-
-            populateOutputReceptiveField(receptiveField, nodeID, ffnn);
-            char* img = getReceptiveFieldImgStr(receptiveField, width, height);
-            puts(img);
-            free(img);
-            printf("%d of %d\n", i + 1, numImages);
+        prt_redu(i + 1, i > 30000 ? 1000 : 300,
+        for (int j = 0; j < numLines; ++j) {
+            // clear screen
+            printf("\033[A\33[2K\r");
         }
-        )
+
+        populateOutputReceptiveField(receptiveField, nodeID, ffnn);
+        char* img = getReceptiveFieldImgStr(receptiveField, width, height);
+        puts(img);
+        free(img);
+        printf("%d of %d\n", i + 1, numImages);)
     }
     putchar('\a');
 

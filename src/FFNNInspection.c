@@ -76,11 +76,9 @@ void test(struct FFNN* ffnn, float** inputs, float** outputs, int setSize) {
         if (guessIndex != goodIndex) {
             errorCount += 1;
         }
-        prt_redu(i, 100, 
+        prt_redu(i + 1, 100, 
         printf("\033[A\33[2K\rError Rate: %.2f%% (%d)\n",
-                            100 * (float)errorCount / (i + 1),
-                            i + 1,
-                            setSize);)
+                            100 * (float)errorCount / (i + 1), i + 1);)
     }
 }
 

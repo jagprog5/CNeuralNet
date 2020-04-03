@@ -218,7 +218,7 @@ void SGD(struct FFNN* ffnn,
         } else {
             loss = quadraticLoss(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
         }
-        prt_redu(i, 100, printf("\033[A\33[2K\rTraining: %d\n", i);)
+        prt_redu(i, 300, printf("\033[A\33[2K\rTraining: %d\n", i);)
     }
 }
 
