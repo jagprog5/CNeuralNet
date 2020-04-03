@@ -41,15 +41,11 @@ void randomize(struct FFNN* ffnn);
 
 void setNetwork(struct FFNN* ffnn, float** vals);
 
-void print(struct FFNN* ffnn);
-
 void setInput(struct FFNN* ffnn, float* inputs);
 
 void forwardPass(struct FFNN* ffnn);
 
 float* getOutput(struct FFNN* ffnn);
-
-int maxIndex(float* in, int num);
 
 float quadraticLoss(float* prediction, float* actual, int size);
 
@@ -64,8 +60,6 @@ void SGD(struct FFNN* ffnn,
                     float** outputs, 
                     int trainingSetSize, 
                     float learningRate);
-
-void test(struct FFNN* ffnn, float** inputs, float** outputs, int setSize);
 
 struct Node** allocNodes(int numLayers, int* layerSizes);
 

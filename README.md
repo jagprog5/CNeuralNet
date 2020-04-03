@@ -21,6 +21,7 @@ In the gif:
 * "Final" shows the network's output with the highest probability, its final guess
 
 Use the commands:
-* `make run` to compile and run
-* `make run_reduced` to compile and run with reduced output
-* `make clean` will remove the object files and executable.
+* `make run` to run normally, as seen in the gif
+* `make run_progression` to show the receptive field of an output neuron over time
+* `make run_reduced` to run with reduced output
+* `make clean` to remove the object files and executable.
