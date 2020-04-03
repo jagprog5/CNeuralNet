@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "MNISTRead.h"
 #include "asciiPixel.h"
 #include "printReducer.h"
@@ -138,24 +139,30 @@ void demoProgression(int nodeID) {
         putchar('\n');
     }
 
+    int nextFrame = 0;
+
     for (int i = 0; i < numImages; ++i) {
         setInput(ffnn, imgs[i]);
         forwardPass(ffnn);
         struct Node** gradient = backwardPass(ffnn, labels[i]);
         applyGradient(ffnn, gradient, 0.01f);
         freeNodes(gradient, ffnn->numLayers, ffnn->layerSizes);
+        	
+	if (nextFrame > 0) {
+		--nextFrame;
+	} else {
+	    nextFrame = powf(i, 0.7f);
+            for (int j = 0; j < numLines; ++j) {
+                // clear screen
+                printf("\033[A\33[2K\r");
+            }
 
-        prt_redu(i + 1, i > 30000 ? 1000 : 300,
-        for (int j = 0; j < numLines; ++j) {
-            // clear screen
-            printf("\033[A\33[2K\r");
-        }
-
-        populateOutputReceptiveField(receptiveField, nodeID, ffnn);
-        char* img = getReceptiveFieldImgStr(receptiveField, width, height);
-        puts(img);
-        free(img);
-        printf("%d of %d\n", i + 1, numImages);)
+            populateOutputReceptiveField(receptiveField, nodeID, ffnn);
+            char* img = getReceptiveFieldImgStr(receptiveField, width, height);
+            puts(img);
+            free(img);
+            printf("%d of %d\n", i + 1, numImages);
+	}
     }
     putchar('\a');
 
