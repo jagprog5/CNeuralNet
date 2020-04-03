@@ -14,10 +14,10 @@ EXECUTABLE = $(BUILDDIR)/cneuralnet
 all: $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECTS)
-	$(CC) $(CFLAGS) -I$(HEADERDIR) $^ -o $@
+	$(CC) -I$(HEADERDIR) $^ -o $@ $(CFLAGS)
 
 $(BUILDDIR)/%.o: $(SOURCEDIR)/%.c
-	$(CC) $(CFLAGS) -I$(HEADERDIR) -c $< -o $@
+	$(CC) -I$(HEADERDIR) -c $< -o $@ $(CFLAGS)
 
 clean:
 	rm -vf $(EXECUTABLE) $(OBJECTS)
@@ -31,3 +31,6 @@ run_visual: all
 
 run_reduced: all
 	./$(EXECUTABLE) 0
+
+run_progression: all
+	./$(EXECUTABLE) 2
