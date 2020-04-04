@@ -83,7 +83,7 @@ void test(struct FFNN* ffnn, float** inputs, float** outputs, int setSize) {
 }
 
 float*** allocReceptiveFields(struct FFNN* ffnn) {
-    int numInputs = ffnn->layerSizes[ffnn->numLayers - 1];
+    int numInputs = ffnn->layerSizes[0];
     float*** fields = malloc(sizeof(*fields) * ffnn->numLayers);
     for (int l = 0; l < ffnn->numLayers; ++l) {
         int numNodes = ffnn->layerSizes[l];
