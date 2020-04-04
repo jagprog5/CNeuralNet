@@ -147,22 +147,20 @@ void demoProgression(int nodeID) {
         struct Node** gradient = backwardPass(ffnn, labels[i]);
         applyGradient(ffnn, gradient, 0.01f);
         freeNodes(gradient, ffnn->numLayers, ffnn->layerSizes);
-        	
-	if (nextFrame > 0) {
-		--nextFrame;
-	} else {
-	    nextFrame = powf(i, 0.7f);
+        if (nextFrame > 0) {
+            --nextFrame;
+        } else {
+            nextFrame = powf(i, 0.7f);
             for (int j = 0; j < numLines; ++j) {
                 // clear screen
                 printf("\033[A\33[2K\r");
             }
-
             populateOutputReceptiveField(receptiveField, nodeID, ffnn);
             char* img = getReceptiveFieldImgStr(receptiveField, width, height);
             puts(img);
             free(img);
             printf("%d of %d\n", i + 1, numImages);
-	}
+        }
     }
     putchar('\a');
 
