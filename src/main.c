@@ -28,6 +28,9 @@ int main(int argc, char **argv) {
             break;
         case 2:
             demoProgression(nodeID);
+            break;
+        default:
+            break;
     }
     return 0;
 }
