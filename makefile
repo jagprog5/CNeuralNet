@@ -24,13 +24,3 @@ clean:
 
 run: all
 	$(EXECUTABLE)
-
-# default is visual
-run_visual: all
-	./$(EXECUTABLE) 1
-
-run_reduced: all
-	./$(EXECUTABLE) 0
-
-run_progression: all
-	./$(EXECUTABLE) 2
