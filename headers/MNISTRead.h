@@ -18,6 +18,6 @@ float** readMNISTTestLabels(uint32_t* numLabels);
 
 void freeSet(float** inputs, float** outputs, int setSize);
 
-char* getImgStr(float* MNISTImage, int width, int height);
+void printImg(float* MNISTImage, int width, int height);
 
 #endif
