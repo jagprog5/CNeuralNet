@@ -1,3 +1,6 @@
+int cursor_y = 0;
+int cursor_x = 0;
+
 char shade(float pixel) {
     char c;
     if (pixel < 0.1)            c = ' ';
