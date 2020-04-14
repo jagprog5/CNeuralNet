@@ -1,20 +1,20 @@
-#include <stdarg.h>
+#include <ncurses.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <math.h>
 #include <time.h>
 #include "FFNN.h"
-#include "printReducer.h"
 
 /**
- * layerSizes is shallow copied, but not modified. It will also not be freed by freeFFNN
+ * layerSizes is deep-copied
  */
 struct FFNN* allocFFNN(int numLayers, int* layerSizes) {
     struct FFNN *ffnn = malloc(sizeof(*ffnn));
     ffnn->numLayers = numLayers;
 
     ffnn->layerSizes = malloc(sizeof(*ffnn->layerSizes) * numLayers);
-    ffnn->layerSizes = layerSizes;
+    for (int i = 0; i < numLayers; ++i) {
+        ffnn->layerSizes[i] = layerSizes[i];
+    }
     ffnn->nodes = allocNodes(numLayers, layerSizes);
 
     ffnn->forwardVals = malloc(sizeof(*ffnn->forwardVals) * numLayers);
@@ -203,7 +203,6 @@ void SGD(struct FFNN* ffnn,
                     float** outputs, 
                     int trainingSetSize, 
                     float learningRate) {
-    putchar('\n');
     for (int i = 0; i < trainingSetSize; ++i) {
         setInput(ffnn, inputs[i]);
         forwardPass(ffnn);
@@ -218,7 +217,6 @@ void SGD(struct FFNN* ffnn,
         } else {
             loss = quadraticLoss(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
         }
-        prt_redu(i, 300, printf("\033[A\33[2K\rTraining: %d\n", i);)
     }
 }
 
@@ -255,4 +253,6 @@ void freeFFNN(struct FFNN* ffnn) {
         free(ffnn->forwardVals[l]);
     }
     free(ffnn->forwardVals);
+    free(ffnn->layerSizes);
+    free(ffnn);
 }

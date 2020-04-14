@@ -48,7 +48,7 @@ float** readMNISTImages(char* path, uint32_t* numImages, uint32_t* width, uint32
 		for (int j = 0; j < imgDataLen; ++j) {
 			imgsOutput[i][j] = (float)imgsBytes[j + i * imgDataLen] / 0xFF;
 		}
-		set_cursor();
+		setCursor();
 		printw("Reading Imgs: %d", i + 1);
 		refresh();
 	}
@@ -76,7 +76,7 @@ float** readMNISTLabels(char* path, uint32_t* numLabels) {
 	for (uint32_t i = 0; i < *numLabels; ++i) {
 		outputs[i] = calloc(10, sizeof(float));
 		outputs[i][labels[i]] = 1;
-		set_cursor();
+		setCursor();
 		printw("Reading Labels: %d", i + 1);
 		refresh();
 	}
@@ -110,19 +110,3 @@ void freeSet(float** inputs, float** outputs, int setSize) {
 	free(inputs);
 	free(outputs);
 }
-
-void printImg(float* MNISTImage, int width, int height) {
-	int loc_y = 0;
-	int loc_x;
-	for (int j = 0; j < height; ++j) {
-		loc_x = COLS - width - 1;
-		++loc_y;
-		move(loc_y, loc_x);
-		for (int i = 0; i < width; ++i) {
-			float pixel = 1;//MNISTImage[i + j * width];
-			addch(shade(pixel));
-		}
-	}
-	refresh();
-}
-
