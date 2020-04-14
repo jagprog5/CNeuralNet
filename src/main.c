@@ -1,37 +1,59 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "curses.h"
+#include <curses.h>
+#include "asciiPixel.h"
+#include "MNISTRead.h"
 
-#define DEFAULT_PAIR 1
-#define COLOR_BG COLOR_MAGENTA
+#define SCREEN_BLANK 0
+#define SCREEN_SET 1
+#define SCREEN_NET 2
+
+
 
 int main(int argc, char **argv) {
+	int screenMode = 0;
+
 	if (initscr() == NULL) {
 		fprintf(stderr, "Error initialising ncurses.\n");
 		exit(1);
 	}
 	start_color();
 	init_color_pairs();
-	init_color(COLOR_BG, 0, 0, 0);//20, 20, 100);
-	init_pair(DEFAULT_PAIR, COLOR_WHITE, COLOR_BG);
 	cbreak();
 	noecho();
 	keypad(stdscr, TRUE);
 
-
-
-	//nodelay(stdscr, TRUE);
-	//start_color();
+	nodelay(stdscr, TRUE);
 	border(0, 0, 0, 0, 0, 0, 0, 0);
-	move(5,5);
-	addstr("tester"); 
-	if (has_colors()) {
-		move(6,5);
-		addstr("Can change color");
+	y_cursor = 2;
+	x_cursor = 3;
+	set_cursor();
+	addstr("Press space to toggle screen output ->");
+	++y;
+	set_cursor();
+	addstr("Press enter to load the training set.");
+	while (1) {
+		ch = getch();
+		switch (ch) {
+			case ' ':
+				//
+				break;
+			case KEY_ENTER:
+				//
+				break;
+			default:
+				break;
+		}
 	}
-	refresh();
-	getch();
+	
+	int numImages, width, height;
+	//float** imgs = readMNISTTrainingImages(&numImages, &width, &height);
+	//for (int i = 0; i < numImages; ++i) {
+//		printImg(imgs[i], width, height);
+//	}
 
+	nodelay(stdscr, FALSE);
+	getch();
 	endwin();
 
 
