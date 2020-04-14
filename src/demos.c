@@ -1,3 +1,4 @@
+/*
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -167,4 +168,5 @@ void demoProgression(int nodeID) {
     freeSet(imgs, labels, numImages);
     free(receptiveField);
     freeFFNN(ffnn);
-}
+}*/
+
