@@ -5,7 +5,7 @@ HEADERDIR = headers
 SOURCES = $(wildcard $(SOURCEDIR)/*.c)
 OBJECTS = $(patsubst $(SOURCEDIR)/%.c,$(BUILDDIR)/%.o,$(SOURCES))
 
-CFLAGS = -lm
+CFLAGS = -lm -lncurses
 EXECUTABLE = $(BUILDDIR)/cneuralnet
 
 
@@ -24,13 +24,3 @@ clean:
 
 run: all
 	$(EXECUTABLE)
-
-# default is visual
-run_visual: all
-	./$(EXECUTABLE) 1
-
-run_reduced: all
-	./$(EXECUTABLE) 0
-
-run_progression: all
-	./$(EXECUTABLE) 2
