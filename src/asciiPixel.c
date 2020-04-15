@@ -38,6 +38,7 @@ void printImg(float* MNISTImage, int width, int height) {
 }
 
 void printBlank(int width, int height) {
+	attron(A_DIM);
 	int locY = 0;
 	int locX;
 	char arr[width];
@@ -50,8 +51,8 @@ void printBlank(int width, int height) {
 		++locY;
 		move(locY, locX);
 		printw("%s", arr);
-
 	}
+	attroff(A_DIM);
 }
 
 /**
@@ -71,6 +72,7 @@ int maxMag(float* in, int num) {
 }
 
 void printReceptiveField(float* field, int width, int height) {
+	attron(A_BOLD);
     float max = field[maxMag(field, width * height)];
 	int locY = 0;
 	int locX;
@@ -84,5 +86,6 @@ void printReceptiveField(float* field, int width, int height) {
 			addch(shade(val > 0 ? val : -val));
 		}
 	}
+	attroff(A_BOLD);
 	attron(COLOR_PAIR(DEF_PAIR));
 }
