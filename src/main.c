@@ -1,6 +1,7 @@
 #include <curses.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 #include "FFNN.h"
 #include "FFNNInspection.h"
 #include "asciiPixel.h"
@@ -9,6 +10,8 @@
 #define SCREEN_BLANK 0
 #define SCREEN_SET 1 // Shows dataset
 #define SCREEN_NET 2 // Shows receptive field of network
+
+#define addStrLine(str) addstr(str);++yCursor;setCursor();
 
 void menu();
 
@@ -23,10 +26,10 @@ void initNcursesWindow() {
 	}
 	start_color();
 	initColorPairs();
-	keypad(stdscr, 1);
+	keypad(stdscr, TRUE);
 	cbreak();
 	noecho();
-	nodelay(stdscr, 0);
+	nodelay(stdscr, FALSE);
 	border(0, 0, 0, 0, 0, 0, 0, 0);
 	yCursor = 2;
 	xCursor = 3;
@@ -57,14 +60,18 @@ void updateSideScreen(int screenMode, int outputIndex, int setIndex,
 	}
 	// Place text below screen
 	move(height + 1, COLS - width - 1);
+	addstr("                            ");
+	move(height + 1, COLS - width - 1);
 	if (screenMode == SCREEN_BLANK) {
-		addstr("No output                  ");
+		addstr("      No output (fast)");
 	} else if (screenMode == SCREEN_SET) {
-		printw("Dataset image %d    ", setIndex + 1);
+		// center align variable sized string
+		int halfLen = ((int)log10f(setIndex + 1) + 1 + 14) / 2;
+		move(height + 1, COLS - width / 2 - halfLen - 1);
+		printw("Dataset Image %d", setIndex + 1);
 	} else if (screenMode == SCREEN_NET) {
-		printw("Receptive field of output %d", outputIndex);
+		printw("  Receptive Field %d (slow)", outputIndex);
 	}
-	refresh();
 }
 
 /**
@@ -78,9 +85,14 @@ void wrapRange(int* val, int min, int max) {
 	}
 }
 
-void handleUserInputAndTrain(float** imgs, int numImages, int width, int height,
-								float** labels, struct FFNN* ffnn) {
-	yCursor = 2;
+void printInstructions() {
+	int oldYCursor = yCursor;
+	yCursor = LINES - 7;
+	setCursor();
+	attron(A_BOLD);
+	addstr("Controls:");
+	attrset(COLOR_PAIR(DEF_PAIR));
+	++yCursor;
 	setCursor();
 	addstr("Use the LEFT and RIGHT arrow keys to toggle the screen.");
 	++yCursor;
@@ -88,189 +100,201 @@ void handleUserInputAndTrain(float** imgs, int numImages, int width, int height,
 	addstr("Use the UP and DOWN arrow keys to navigate the images.");
 	++yCursor;
 	setCursor();
-	addstr("Press space to begin training.");
-	refresh();
-
-	int training = 0;
-	int firstStart = 1;
-	int screenMode = 0;
-	int firstFrameOnBlank = 1;
-	int outputIndex = 0;
-	int setIndex = 0;
-	while (setIndex < numImages) {
-		int ch = getch();
-		if (ch != ERR) {
-			if (' ') {
-				training = !training;
-				if (firstStart) {
-					firstStart = 0;
-					setIndex = 0;
-				}
-				int numClear = 2 - yCursor; // number of lines to clear
-				yCursor = 2;
-				for (int i = 0; i < numClear; ++i) {
-					setCursor();
-					addstr("                                                        ");
-					yCursor += 1;
-				}
-				yCursor -= numClear;
-				setCursor();
-				if (training) {
-					addstr("Press space to pause.");
-				} else {
-					addstr("Press space to resume.");
-				}
-				++yCursor;
-				nodelay(stdscr, training); // getch non blocking
-			} else if (ch == KEY_RIGHT) {
-				++screenMode;
-			} else if (ch == KEY_LEFT) {
-				--screenMode;
-			} else if (screenMode == SCREEN_NET) {
-				if (ch == KEY_UP) {
-					++outputIndex;
-				} else if (ch == KEY_DOWN) {
-					--outputIndex;
-				}
-			} else if (screenMode == SCREEN_SET) {
-				if (ch == KEY_UP) {
-					++setIndex;
-				} else if (ch == KEY_DOWN) {
-					--setIndex;
-				}
-			}
-			if (ch == KEY_UP || ch == KEY_DOWN || ch == KEY_LEFT || ch == KEY_RIGHT) {
-				wrapRange(screenMode, 0, 3);
-				if (screenMode == SCREEN_BLANK) {
-					firstFrameOnBlank = 1;
-				}
-				wrapRange(outputIndex, 0, 10);
-				wrapRange(setIndex, 0, numImages);
-				if (!training) {
-					updateSideScreen(screenMode, outputIndex, setIndex, imgs, width, height, ffnn);
-				}
-			}
-		}
-		if (training) {
-			setCursor();
-			if (firstFrameOnBlank) {
-				firstFrameOnBlank = 0;
-				addstr("Training...        ");
-			} else {
-				printw("Training: %d       ", setIndex + 1);
-			}
-			setInput(ffnn, imgs[setIndex]);
-			forwardPass(ffnn);
-			struct Node** gradient = backwardPass(ffnn, labels[setIndex]);
-			applyGradient(ffnn, gradient, 0.01f);
-			freeNodes(gradient, ffnn->numLayers, ffnn->layerSizes);
-
-			float* guess = getOutput(ffnn);
-			float loss = crossEntropyLoss(guess,
-								labels[setIndex], ffnn->layerSizes[ffnn->numLayers - 1]);
-			if (screenMode != SCREEN_BLANK || firstFrameOnBlank) {
-				updateSideScreen(screenMode, outputIndex, setIndex, imgs, width, height, ffnn);
-			}
-		}
-	}
+	addstr("Press space to pause/resume.");
+	++yCursor;
+	setCursor();
+	addstr("Press backspace to reset to the beginning of training.");
+	yCursor = oldYCursor;
+	setCursor();
 }
 
-void train(int *screenMode, int *outputIndex, int *setIndex, float** imgs,
-			int width, int height, float** labels, int numImages, struct FFNN* ffnn) {
-	int numClear = 3; // number of lines to clear
-	yCursor = 2;
-	for (int i = 0; i < numClear; ++i) {
+void clearTopLeftText(int numLines) {
+	yCursor = 2; // scroll back up to beginning to clear
+	for (int i = 0; i < numLines; ++i) {
 		setCursor();
 		addstr("                                                        ");
 		yCursor += 1;
 	}
-	yCursor -= numClear;
+	yCursor -= numLines;
 	setCursor();
-	addstr("Press space to pause.");
-	++yCursor;
+}
 
-	for (int i = *setIndex; i < numImages; ++i) {
+void handleArrowInput(int ch, int *screenMode, bool *blankPulse,
+						int *outputIndex, int* shownIndex, int numImages) {
+	if (ch == KEY_RIGHT) {
+		++*screenMode;
+	} else if (ch == KEY_LEFT) {
+		--*screenMode;
+	} else if (ch == KEY_UP) {
+		if (*screenMode == SCREEN_NET) {
+			++*outputIndex;
+		} else if (*screenMode == SCREEN_SET) {
+			++*shownIndex;
+		}
+	} else if (ch == KEY_DOWN) {
+		if (*screenMode == SCREEN_NET) {
+			--*outputIndex;
+		} else if (*screenMode == SCREEN_SET) {
+			--*shownIndex;
+		}
+	}
+	wrapRange(screenMode, 0, 3);
+	if (*screenMode == SCREEN_BLANK) {
+		*blankPulse = TRUE;
+	}
+	wrapRange(outputIndex, 0, 10);
+	wrapRange(shownIndex, 0, numImages);
+}
+
+void handleOtherInput(int ch, bool *training, int *setIndex, int *shownIndex, struct FFNN* ffnn) {
+	if (ch == ' ' || ch == KEY_BACKSPACE) {
+		if (ch == ' ') {
+			*training = !*training;
+		} else if (ch == KEY_BACKSPACE) {
+			*training = FALSE;
+			*setIndex = 0;
+			randomize(ffnn);
+		}
+		*shownIndex = *setIndex;
+		nodelay(stdscr, training);
+	}
+}
+
+void printProbs(bool empty, struct FFNN* ffnn, float** labels, int shownIndex) {
+	float* outs = getOutput(ffnn);
+	xCursor += 8;
+	setCursor();
+	addStrLine("0  1  2  3  4  5  6  7  8  9");
+	if (empty) {
+		addStrLine("-  -  -  -  -  -  -  -  -  -");
+		addStrLine("-  -  -  -  -  -  -  -  -  -");
+	} else {
+		for (int i = 0; i < 10; ++i) {
+			addch(shade(outs[i]));
+			addstr("  ");
+		}
+		yCursor += 1;
+		setCursor();
+		float* label = labels[shownIndex];
+		for (int i = 0; i < 10; ++i) {
+			addch(shade(label[i]));
+			addstr("  ");
+		}
+		yCursor += 1;
+		setCursor();
+	}
+	xCursor -= 7;
+	yCursor -= 3;
+	setCursor();
+	if (!empty) {
+		int guessIndex = maxIndex(outs, 10);
+		int goodIndex = maxIndex(labels[shownIndex], 10);
+		if (guessIndex == goodIndex) {
+			attron(COLOR_PAIR(GOOD_PAIR));
+			addStrLine(" GOOD");
+		} else {
+			attron(COLOR_PAIR(BAD_PAIR));
+			addStrLine(" BAD ");
+		}
+		attron(COLOR_PAIR(DEF_PAIR));
+	} else {
+		addStrLine(" ----");
+	}
+
+	addStrLine("Probs:");
+	addStrLine("Label:");
+	xCursor -= 1;
+}
+
+void handleUserInputAndTrain(float** imgs, int numImages, int width, int height,
+								float** labels, struct FFNN* ffnn) {
+	printInstructions();
+	bool training = FALSE;
+	bool blankPulse = TRUE; // update pulse, since BLANK doesn't print anything otherwise
+	int screenMode = 0;
+	int outputIndex = 0; // receptive field of output node at this index
+	int setIndex = 0; // index in training set
+	int shownIndex = 0; // index displayed on screen
+	updateSideScreen(screenMode, outputIndex, shownIndex, imgs, width, height, ffnn);
+
+	yCursor = 7;
+	setCursor();
+	addstr("Press space to start training.");
+	refresh();
+
+	while (setIndex < numImages) {
 		int ch = getch();
 		if (ch != ERR) {
-			if (' ') {
-				*setIndex = i;
-				yCursor = 2;
-				setCursor();
-				addstr("Paused. Press space to resume.              ");
-				return;
-			} else if (ch == KEY_RIGHT || ch == KEY_LEFT) {
-				if (ch == KEY_RIGHT) {
-					++*screenMode;
-					if (*screenMode > 2) {
-						*screenMode = 0;
-					}
-				} else {
-					--*screenMode;
-					if (*screenMode < 0) {
-						*screenMode = 2;
-					}
-				}
-				if (*screenMode == SCREEN_BLANK) {
-					setCursor();
-					addstr("Training....    ");
-					updateSideScreen(*screenMode, *outputIndex, i, imgs, width, height, ffnn);
-				}
-			} else if (*screenMode == SCREEN_NET) {
-				if (ch == KEY_UP) {
-					++*outputIndex;
-					if (*outputIndex > 9) {
-						*outputIndex = 0;
-					}
-				} else if (ch == KEY_DOWN) {
-					--*outputIndex;
-					if (*outputIndex < 0) {
-						*outputIndex = 9;
-					}
-				}
+			handleArrowInput(ch, &screenMode, &blankPulse, &outputIndex, &shownIndex, numImages);
+			handleOtherInput(ch, &training, &setIndex, &shownIndex, ffnn);
+		}
+
+		if (training) {
+			setInput(ffnn, imgs[shownIndex]);
+			forwardPass(ffnn);
+			struct Node** gradient = backwardPass(ffnn, labels[shownIndex]);
+			applyGradient(ffnn, gradient, 0.01f);
+			freeNodes(gradient, ffnn->numLayers, ffnn->layerSizes);
+		} else if (blankPulse || screenMode != SCREEN_BLANK || ch == KEY_UP || ch == KEY_DOWN) {
+			setInput(ffnn, imgs[shownIndex]);
+			forwardPass(ffnn);
+		}
+
+		if (ch == ' ' || ch == KEY_BACKSPACE) {
+			yCursor = 7;
+			setCursor();
+			if (training) {
+				addstr("Press space to pause.           ");
+			} else {
+				addstr("Press space to resume.");
 			}
 		}
 
-		if (*screenMode != SCREEN_BLANK) {
+		yCursor = 8;
+		setCursor();
+		if (screenMode != SCREEN_BLANK) {
+			printw("Training: %d       ", setIndex + 1);
+		} else if (blankPulse) {
+			addstr("Training...        ");
+		}
+
+		if (blankPulse || screenMode != SCREEN_BLANK) {
+			yCursor = 10;
 			setCursor();
-			printw("Training: %d       ", i + 1);
+			printProbs(blankPulse, ffnn, labels, shownIndex);
+			updateSideScreen(screenMode, outputIndex, shownIndex, imgs, width, height, ffnn);
 		}
 
-        setInput(ffnn, imgs[i]);
-        forwardPass(ffnn);
-        struct Node** gradient = backwardPass(ffnn, labels[i]);
-        applyGradient(ffnn, gradient, 0.01f);
-        freeNodes(gradient, ffnn->numLayers, ffnn->layerSizes);
 
-        float* guess = getOutput(ffnn);
-        float loss = crossEntropyLoss(guess, labels[i], ffnn->layerSizes[ffnn->numLayers - 1]);
-
-		if (*screenMode != SCREEN_BLANK) {
-			updateSideScreen(*screenMode, *outputIndex, i, imgs, width, height, ffnn);
+		if (!training && ch == KEY_UP || ch == KEY_DOWN || ch == KEY_LEFT || ch == KEY_RIGHT) {
+			updateSideScreen(screenMode, outputIndex, shownIndex, imgs, width, height, ffnn);
 		}
-		refresh();
-    }
-	*setIndex = -1;
+
+		if (training) {
+			++setIndex;
+			shownIndex = setIndex;
+		}
+		if (blankPulse) {
+			// pulse only lasts one frame
+			blankPulse = FALSE;
+		}
+	}
 }
 
 void menu() {
 	initNcursesWindow();
 	int numImages, width, height;
+	addStrLine("Loading training set...");
 	float** imgs = readMNISTTrainingImages(&numImages, &width, &height);
-	++yCursor;
 	float** labels = readMNISTTrainingLabels(&numImages);
-	++yCursor;
+	addStrLine("Ready.");
 
 	struct FFNN* ffnn = initNN(width * height);
-
-	// while (setIndex != -1) {
 	handleUserInputAndTrain(imgs, numImages, width, height, labels, ffnn);
-		
-		// train(&screenMode, &outputIndex, &setIndex, imgs, width, height, labels, numImages, ffnn);
-	// }
 
-	// after training TODO
+	// // after training TODO
 
-	nodelay(stdscr, 0);
+	nodelay(stdscr, FALSE);
 	getch();
 	endwin();
 }
