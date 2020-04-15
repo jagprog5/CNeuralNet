@@ -11,7 +11,7 @@
 #define SCREEN_SET 1 // Shows dataset
 #define SCREEN_NET 2 // Shows receptive field of network
 
-#define addStrLine(str) addstr(str);++yCursor;setCursor();
+#define addStrLine(str) addstr(str);++yCursor;setCursor()
 
 void menu();
 
@@ -46,15 +46,20 @@ struct FFNN* initNN(int numInputs) {
 	return ffnn;
 }
 
-void updateSideScreen(int screenMode, int outputIndex, int setIndex, 
-						float** imgs, int width, int height, struct FFNN* ffnn) {
-	if (screenMode == SCREEN_BLANK) {
+struct DisplayState {
+	int screenMode;
+	int outputIndex; // receptive field of output node at this index
+	int shownIndex; // index displayed on screen within the set
+};
+
+void updateSideScreen(struct DisplayState *ds, float** imgs, int width, int height, struct FFNN* ffnn) {
+	if (ds->screenMode == SCREEN_BLANK) {
 		printBlank(width, height);
-	} else if (screenMode == SCREEN_SET) {
-		printImg(imgs[setIndex], width, height);
-	} else if (screenMode == SCREEN_NET) {
+	} else if (ds->screenMode == SCREEN_SET) {
+		printImg(imgs[ds->shownIndex], width, height);
+	} else if (ds->screenMode == SCREEN_NET) {
 		float* field = malloc(sizeof(*field) * width * height);
-		populateOutputReceptiveField(field, outputIndex, ffnn);
+		populateOutputReceptiveField(field, ds->outputIndex, ffnn);
 		printReceptiveField(field, width, height);
 		free(field);
 	}
@@ -62,15 +67,15 @@ void updateSideScreen(int screenMode, int outputIndex, int setIndex,
 	move(height + 1, COLS - width - 1);
 	addstr("                            ");
 	move(height + 1, COLS - width - 1);
-	if (screenMode == SCREEN_BLANK) {
+	if (ds->screenMode == SCREEN_BLANK) {
 		addstr("      No output (fast)");
-	} else if (screenMode == SCREEN_SET) {
+	} else if (ds->screenMode == SCREEN_SET) {
 		// center align variable sized string
-		int halfLen = ((int)log10f(setIndex + 1) + 1 + 14) / 2;
+		int halfLen = ((int)log10f(ds->shownIndex + 1) + 1 + 14) / 2;
 		move(height + 1, COLS - width / 2 - halfLen - 1);
-		printw("Dataset Image %d", setIndex + 1);
-	} else if (screenMode == SCREEN_NET) {
-		printw("  Receptive Field %d (slow)", outputIndex);
+		printw("Dataset Image %d", ds->shownIndex + 1);
+	} else if (ds->screenMode == SCREEN_NET) {
+		printw("      Receptive Field %d", ds->outputIndex);
 	}
 }
 
@@ -108,6 +113,20 @@ void printInstructions() {
 	setCursor();
 }
 
+void clearInstructions() {
+	int oldYCursor = yCursor;
+	yCursor = LINES - 7;
+	for (int i = 0; i < 5; ++i) {
+		setCursor();
+		addstr("                                                        ");
+		yCursor += 1;
+	}
+	yCursor -= 5;
+	setCursor();
+	yCursor = oldYCursor;
+	setCursor();
+}
+
 void clearTopLeftText(int numLines) {
 	yCursor = 2; // scroll back up to beginning to clear
 	for (int i = 0; i < numLines; ++i) {
@@ -119,31 +138,27 @@ void clearTopLeftText(int numLines) {
 	setCursor();
 }
 
-void handleArrowInput(int ch, int *screenMode, bool *blankPulse,
-						int *outputIndex, int* shownIndex, int numImages) {
+void handleArrowInput(int ch, struct DisplayState *ds, int numImages) {
 	if (ch == KEY_RIGHT) {
-		++*screenMode;
+		++ds->screenMode;
 	} else if (ch == KEY_LEFT) {
-		--*screenMode;
+		--ds->screenMode;
 	} else if (ch == KEY_UP) {
-		if (*screenMode == SCREEN_NET) {
-			++*outputIndex;
-		} else if (*screenMode == SCREEN_SET) {
-			++*shownIndex;
+		if (ds->screenMode == SCREEN_NET) {
+			++ds->outputIndex;
+		} else if (ds->screenMode == SCREEN_SET) {
+			++ds->shownIndex;
 		}
 	} else if (ch == KEY_DOWN) {
-		if (*screenMode == SCREEN_NET) {
-			--*outputIndex;
-		} else if (*screenMode == SCREEN_SET) {
-			--*shownIndex;
+		if (ds->screenMode == SCREEN_NET) {
+			--ds->outputIndex;
+		} else if (ds->screenMode == SCREEN_SET) {
+			--ds->shownIndex;
 		}
 	}
-	wrapRange(screenMode, 0, 3);
-	if (*screenMode == SCREEN_BLANK) {
-		*blankPulse = TRUE;
-	}
-	wrapRange(outputIndex, 0, 10);
-	wrapRange(shownIndex, 0, numImages);
+	wrapRange(&ds->screenMode, 0, 3);
+	wrapRange(&ds->outputIndex, 0, 10);
+	wrapRange(&ds->shownIndex, 0, numImages);
 }
 
 void handleOtherInput(int ch, bool *training, int *setIndex, int *shownIndex, struct FFNN* ffnn) {
@@ -206,37 +221,33 @@ void printProbs(bool empty, struct FFNN* ffnn, float** labels, int shownIndex) {
 	xCursor -= 1;
 }
 
-void handleUserInputAndTrain(float** imgs, int numImages, int width, int height,
+struct DisplayState* handleUserInputAndTrain(float** imgs, int numImages, int width, int height,
 								float** labels, struct FFNN* ffnn) {
 	printInstructions();
 	bool training = FALSE;
-	bool blankPulse = TRUE; // update pulse, since BLANK doesn't print anything otherwise
-	int screenMode = 0;
-	int outputIndex = 0; // receptive field of output node at this index
-	int setIndex = 0; // index in training set
-	int shownIndex = 0; // index displayed on screen
-	updateSideScreen(screenMode, outputIndex, shownIndex, imgs, width, height, ffnn);
-
-	yCursor = 7;
-	setCursor();
-	addstr("Press space to start training.");
-	refresh();
+	bool blankPulse = TRUE; // draw pulse, since BLANK doesn't print anything otherwise
+	struct DisplayState *ds = calloc(1, sizeof(struct DisplayState));
+	int setIndex = 0; // Index in training set (as opposed to shownIndex in ds)
+	updateSideScreen(ds, imgs, width, height, ffnn);
 
 	while (setIndex < numImages) {
 		int ch = getch();
 		if (ch != ERR) {
-			handleArrowInput(ch, &screenMode, &blankPulse, &outputIndex, &shownIndex, numImages);
-			handleOtherInput(ch, &training, &setIndex, &shownIndex, ffnn);
+			handleArrowInput(ch, ds, numImages);
+			handleOtherInput(ch, &training, &setIndex, &ds->shownIndex, ffnn);
+			if (ds->screenMode == SCREEN_BLANK) {
+				blankPulse = TRUE;
+			}
 		}
 
 		if (training) {
-			setInput(ffnn, imgs[shownIndex]);
+			setInput(ffnn, imgs[setIndex]);
 			forwardPass(ffnn);
-			struct Node** gradient = backwardPass(ffnn, labels[shownIndex]);
+			struct Node** gradient = backwardPass(ffnn, labels[setIndex]);
 			applyGradient(ffnn, gradient, 0.01f);
 			freeNodes(gradient, ffnn->numLayers, ffnn->layerSizes);
-		} else if (blankPulse || screenMode != SCREEN_BLANK || ch == KEY_UP || ch == KEY_DOWN) {
-			setInput(ffnn, imgs[shownIndex]);
+		} else if (blankPulse || ds->screenMode != SCREEN_BLANK || ch == KEY_UP || ch == KEY_DOWN) {
+			setInput(ffnn, imgs[ds->shownIndex]);
 			forwardPass(ffnn);
 		}
 
@@ -252,33 +263,94 @@ void handleUserInputAndTrain(float** imgs, int numImages, int width, int height,
 
 		yCursor = 8;
 		setCursor();
-		if (screenMode != SCREEN_BLANK) {
+		if (ds->screenMode != SCREEN_BLANK) {
 			printw("Training: %d       ", setIndex + 1);
 		} else if (blankPulse) {
 			addstr("Training...        ");
 		}
 
-		if (blankPulse || screenMode != SCREEN_BLANK) {
+		if (blankPulse || ds->screenMode != SCREEN_BLANK) {
 			yCursor = 10;
 			setCursor();
-			printProbs(blankPulse, ffnn, labels, shownIndex);
-			updateSideScreen(screenMode, outputIndex, shownIndex, imgs, width, height, ffnn);
+			printProbs(blankPulse, ffnn, labels, ds->shownIndex);
+			updateSideScreen(ds, imgs, width, height, ffnn);
 		}
 
 
 		if (!training && ch == KEY_UP || ch == KEY_DOWN || ch == KEY_LEFT || ch == KEY_RIGHT) {
-			updateSideScreen(screenMode, outputIndex, shownIndex, imgs, width, height, ffnn);
+			updateSideScreen(ds, imgs, width, height, ffnn);
 		}
 
 		if (training) {
 			++setIndex;
-			shownIndex = setIndex;
+			ds->shownIndex = setIndex;
 		}
 		if (blankPulse) {
 			// pulse only lasts one frame
 			blankPulse = FALSE;
 		}
 	}
+	nodelay(stdscr, FALSE);
+	return ds;
+}
+
+/**
+ * Returns TRUE is training should be reset.
+ */
+bool handlePostTrainingInput(struct DisplayState* ds, float** imgs, int numImages,
+								int width, int height, float** labels, struct FFNN* ffnn) {
+	ds->shownIndex = numImages - 1;
+	while (1) {
+		int ch = getch();
+		handleArrowInput(ch, ds, numImages);
+		if (ch == KEY_BACKSPACE) {
+			clearTopLeftText(12);
+			yCursor = 7;
+			setCursor();
+			addStrLine("Training reset.");
+			return TRUE;
+		} else if (ch == ' ') {
+			return FALSE;
+		} else if (ch == KEY_UP || ch == KEY_DOWN || ch == KEY_LEFT || ch == KEY_RIGHT) {
+			updateSideScreen(ds, imgs, width, height, ffnn);
+
+			if (ds->screenMode != SCREEN_BLANK) {
+				setInput(ffnn, imgs[ds->shownIndex]);
+				forwardPass(ffnn);
+			}
+			yCursor = 10;
+			setCursor();
+			printProbs(ds->screenMode == SCREEN_BLANK, ffnn, labels, ds->shownIndex);
+		}
+	}
+}
+
+void test(struct FFNN* ffnn, float** inputs, int width, int height, float** outputs, int setSize) {
+    int errorCount = 0;
+    int numOutputs = ffnn->layerSizes[ffnn->numLayers - 1];
+	struct DisplayState ds;
+	ds.screenMode = SCREEN_SET;
+    for (int i = 0; i < setSize; ++i) {
+		ds.shownIndex = i;
+        setInput(ffnn, inputs[i]);
+        forwardPass(ffnn);
+        int guessIndex = maxIndex(getOutput(ffnn), numOutputs);
+        int goodIndex = maxIndex(outputs[i], numOutputs);
+        if (guessIndex != goodIndex) {
+            attron(COLOR_PAIR(BAD_PAIR));
+            errorCount += 1;
+        }
+		yCursor = 7;
+		setCursor();
+        printw("Error Rate: %.2f%% (%d)", 100 * (float)errorCount / (i + 1), i + 1);
+		refresh();
+		if (guessIndex != goodIndex) {
+            attron(COLOR_PAIR(DEF_PAIR));
+        }
+		updateSideScreen(&ds, inputs, width, height, ffnn);
+    }
+    ++yCursor;
+	setCursor();
 }
 
 void menu() {
@@ -288,13 +360,47 @@ void menu() {
 	float** imgs = readMNISTTrainingImages(&numImages, &width, &height);
 	float** labels = readMNISTTrainingLabels(&numImages);
 	addStrLine("Ready.");
+	yCursor = 7;
+	setCursor();
+	addstr("Press space to start training.");
 
 	struct FFNN* ffnn = initNN(width * height);
-	handleUserInputAndTrain(imgs, numImages, width, height, labels, ffnn);
 
-	// // after training TODO
+	bool flag = TRUE;
+	struct DisplayState* ds;
+	while (flag) {
+		ds = handleUserInputAndTrain(imgs, numImages, width, height, labels, ffnn);
 
-	nodelay(stdscr, FALSE);
+		clearTopLeftText(7);
+		addStrLine("Training complete.");
+		addStrLine("Press space to begin testing,");
+		addStrLine("or backspace to restart.");
+
+		flag = handlePostTrainingInput(ds, imgs, numImages, width, height, labels, ffnn);
+		free(ds);
+	}
+
+	clearInstructions();
+	clearTopLeftText(12);
+	ds->screenMode = SCREEN_SET;
+	ds->shownIndex = 0;
+
+	yCursor = 2;
+	setCursor();
+	addStrLine("Loading testing set...");
+
+	freeSet(imgs, labels, numImages);
+	imgs = readMNISTTestImages(&numImages, &width, &height);
+	labels = readMNISTTestLabels(&numImages);
+
+	test(ffnn, imgs, width, height, labels, numImages);
+
+	addStrLine("Testing complete. Press any key to exit.");
+	flushinp();
 	getch();
+
+	freeSet(imgs, labels, numImages);
+	freeFFNN(ffnn);
+
 	endwin();
 }
