@@ -1,3 +1,4 @@
+#include <ncurses.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <float.h>
@@ -46,26 +47,9 @@ int maxIndex(float* in, int num) {
     return index;
 }
 
-void test(struct FFNN* ffnn, float** inputs, float** outputs, int setSize) {
-    putchar('\n');
-    int errorCount = 0;
-    int numOutputs = ffnn->layerSizes[ffnn->numLayers - 1];
-    for (int i = 0; i < setSize; ++i) {
-        setInput(ffnn, inputs[i]);
-        forwardPass(ffnn);
-        int guessIndex = maxIndex(getOutput(ffnn), numOutputs);
-        int goodIndex = maxIndex(outputs[i], numOutputs);
-        if (guessIndex != goodIndex) {
-            errorCount += 1;
-        }
-        printf("\033[A\33[2K\rError Rate: %.2f%% (%d)\n",
-                            100 * (float)errorCount / (i + 1), i + 1);
-    }
-}
-
-
 /**
- * Simplified for getting receptive field for single output node, rather than entire network
+ * Simplified for getting receptive field for single output node, rather than entire network.
+ * flag and flag2 skip computations thay aren't needed
  */
 void populateOutputReceptiveField(float* receptiveField,
                                     int outputNode,
@@ -86,10 +70,17 @@ void populateOutputReceptiveField(float* receptiveField,
                     j = outputNode;
                 }
                 float accum = 0;
+                int flag2 = l == 1;
                 for (int k = 0; k < ffnn->layerSizes[l - 1]; ++k) {
+                    if (flag2) {
+                        k = i;
+                    }
                     float input = A(l - 1, k);
                     float weight = W(l, j, k);
                     accum += input * weight;
+                    if (flag2) {
+                        break;
+                    }
                 }
                 A(l, j) = accum;
                 if (flag) {

@@ -5,7 +5,7 @@
 
 void inspect(struct FFNN* ffnn);
 
-void test(struct FFNN* ffnn, float** inputs, float** outputs, int setSize);
+int maxIndex(float* in, int num);
 
 void populateOutputReceptiveField(float* receptiveField, int outputNode, struct FFNN* ffnn);
 
