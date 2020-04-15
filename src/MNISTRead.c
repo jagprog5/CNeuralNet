@@ -48,10 +48,12 @@ float** readMNISTImages(char* path, uint32_t* numImages, uint32_t* width, uint32
 		for (int j = 0; j < imgDataLen; ++j) {
 			imgsOutput[i][j] = (float)imgsBytes[j + i * imgDataLen] / 0xFF;
 		}
-		setCursor();
 		printw("Reading Imgs: %d", i + 1);
+		setCursor();
 		refresh();
 	}
+	++yCursor;
+	setCursor();
 
 	fclose(fp);
 	free(imgsBytes);
@@ -76,10 +78,13 @@ float** readMNISTLabels(char* path, uint32_t* numLabels) {
 	for (uint32_t i = 0; i < *numLabels; ++i) {
 		outputs[i] = calloc(10, sizeof(float));
 		outputs[i][labels[i]] = 1;
-		setCursor();
 		printw("Reading Labels: %d", i + 1);
+		setCursor();
 		refresh();
 	}
+
+	++yCursor;
+	setCursor();
 
 	fclose(fp);
 	free(labels);
