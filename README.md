@@ -1,12 +1,10 @@
 <img src="https://github.com/jagprog5/CNeuralNet/blob/master/reasources/_demo.gif" height="400">
 
-<sup>Gif was edited for brevity. The program still usually completes in less than 1 minute.</sup>
-
 # C Neural Network
 
-[Classifies the MNIST handwritten digit database](http://yann.lecun.com/exdb/mnist/)
+Use `make run` to compile and run. Needs the [ncurses](https://www.cyberciti.biz/faq/linux-install-ncurses-library-headers-on-debian-ubuntu-centos-fedora/) library.
 
-The program is general and allows for arbitrarily sized networks (within reason).
+[Classifies the MNIST handwritten digit database](http://yann.lecun.com/exdb/mnist/)
 
 Properties of this network:
   * 28x28 inputs, 32 nodes in hidden layer, 10 output nodes
@@ -15,13 +13,22 @@ Properties of this network:
   * Cross entropy loss and stochastic gradient descent for training
   * Typically error rate of 7-8% for this database
 
-In the gif:
-* "Label" shows the image's correct corresponding digit, as given in the database
-* "Probs" shows the networks output as probabilities for each digit
-* "Final" shows the network's output with the highest probability, its final guess
+Controls:
+ * The LEFT and RIGHT arrow keys toggle the screen view
+	 * No output is fast, and trains the network is ~30 seconds
+	 * Set view shows the current image in the training set, and the network's output
+		 * "Probs" shows the network's output for the image
+		 * "Label" shows the image's correct corresponding digit, as given in the dataset
+		 * "GOOD" & "BAD" indicates if the highest probability output matches the label
+	 * Field view shows the receptive field for the output neurons
+ * The UP and DOWN arrow keys are used to navigate
+	 * In set view, this moves through the dataset
+	 * In field view, this moves through the output neurons
+ * Space starts and stops training
+ * Backspace resets to the beginning of training
 
-Use the commands:
-* `make run` to run normally, as seen in the gif
-* `make run_progression` to show the receptive field of an output neuron over time
-* `make run_reduced` to run with reduced output
-* `make clean` to remove the object files and executable.
+After training, the test set is loaded, and the error rate is calculated.
+
+Make sure the terminal window size is large enough.
+If running in WSL, run in tmux to avoid rendering issues.
+

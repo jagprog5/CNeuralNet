@@ -149,6 +149,7 @@ static void printSideScreen(struct DisplayState *ds, float** imgs,
 	} else if (ds->screenState == SCREEN_NET) {
 		printw("     Receptive Field %d", ds->outputIndex);
 	}
+	refresh();
 }
 
 /**
@@ -181,7 +182,7 @@ static void printProbs(bool empty, struct FFNN* ffnn, float** labels, int shownI
 		}
 	}
 	xCursor -= 7;
-	yCursor -= 4;
+	yCursor -= 3;
 	if (!empty) {
 		int guessIndex = maxIndex(outs, 10);
 		int goodIndex = maxIndex(labels[shownIndex], 10);
