@@ -2,6 +2,8 @@
 
 # C Neural Network
 
+Use `make run` to compile and run. Needs the [ncurses](https://www.cyberciti.biz/faq/linux-install-ncurses-library-headers-on-debian-ubuntu-centos-fedora/) library.
+
 [Classifies the MNIST handwritten digit database](http://yann.lecun.com/exdb/mnist/)
 
 Properties of this network:
@@ -26,8 +28,6 @@ Controls:
  * Backspace resets to the beginning of training
 
 After training, the test set is loaded, and the error rate is calculated.
-
-Use `make run` to compile and run. Needs the [ncurses](https://www.cyberciti.biz/faq/linux-install-ncurses-library-headers-on-debian-ubuntu-centos-fedora/) library
 
 Make sure the terminal window size is large enough.
 If running in WSL, run in tmux to avoid rendering issues.
