@@ -1,4 +1,4 @@
-<img src="https://github.com/jagprog5/CNeuralNet/blob/master/reasources/_demo.gif" height="400">
+![](https://github.com/jagprog5/CNeuralNet/blob/master/reasources/_demo.gif)
 
 # C Neural Network
 
