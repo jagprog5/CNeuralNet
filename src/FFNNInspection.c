@@ -4,7 +4,6 @@
 #include <float.h>
 #include "FFNNInspection.h"
 #include "FFNN.h"
-#include "asciiPixel.h"
 
 void inspect(struct FFNN* ffnn) {
     puts("====================Feed Forward Neural Network=================");
