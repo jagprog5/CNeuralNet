@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <curses.h>
 #include "MNISTRead.h"
-#include "asciiPixel.h"
+#include "interfaceUtil.h"
 
 /**
  * Source for MNIST database files:
@@ -42,18 +42,17 @@ float** readMNISTImages(char* path, uint32_t* numImages, uint32_t* width, uint32
 	uint8_t* imgsBytes = malloc(sizeof(*imgsBytes) * imgsDataLen);
 	fread(imgsBytes, sizeof(*imgsBytes), imgsDataLen, fp);
 	
+	++yCursor;
 	for (uint32_t i = 0; i < *numImages; ++i) {
 		uint32_t imgDataLen = *width * *height;
 		imgsOutput[i] = malloc(sizeof(float) * imgDataLen);
 		for (int j = 0; j < imgDataLen; ++j) {
 			imgsOutput[i][j] = (float)imgsBytes[j + i * imgDataLen] / 0xFF;
 		}
-		printw("Reading Imgs: %d", i + 1);
 		setCursor();
+		printw("Reading Imgs: %d", i + 1);
 		refresh();
 	}
-	++yCursor;
-	setCursor();
 
 	fclose(fp);
 	free(imgsBytes);
@@ -63,7 +62,7 @@ float** readMNISTImages(char* path, uint32_t* numImages, uint32_t* width, uint32
 float** readMNISTLabels(char* path, uint32_t* numLabels) {
 	FILE* fp = fopen(path, "rb");
 	if (fp==NULL) {
-		fprintf(stderr, "Error opiening images file.\n");
+		fprintf(stderr, "Error opening images file.\n");
 		exit(1);
 	}
 	uint32_t magicNumber;
@@ -75,16 +74,14 @@ float** readMNISTLabels(char* path, uint32_t* numLabels) {
 
 	float** outputs = malloc(sizeof(*outputs) * *numLabels);
 
+	++yCursor;
 	for (uint32_t i = 0; i < *numLabels; ++i) {
 		outputs[i] = calloc(10, sizeof(float));
 		outputs[i][labels[i]] = 1;
-		printw("Reading Labels: %d", i + 1);
 		setCursor();
+		printw("Reading Labels: %d", i + 1);
 		refresh();
 	}
-
-	++yCursor;
-	setCursor();
 
 	fclose(fp);
 	free(labels);
