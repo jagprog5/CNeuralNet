@@ -9,7 +9,7 @@ CFLAGS = -lm -lncurses
 EXECUTABLE = $(BUILDDIR)/cneuralnet
 
 
-.PHONY: all clean run run_visual run_reduced
+.PHONY: all clean run
 
 all: $(EXECUTABLE)
 
