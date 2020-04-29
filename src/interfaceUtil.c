@@ -11,6 +11,14 @@ void ncursesConfig() {
 		fprintf(stderr, "Error initialising ncurses.\n");
 		exit(1);
 	}
+	int col, row;
+	getmaxyx(stdscr,row,col);
+	if (col < MINCOLS || row < MINROWS) {
+		// TODO handle resizing window
+		endwin();
+		fprintf(stderr, "Increase the terminal size! Needs at least (%d, %d)\n", MINROWS, MINCOLS);
+		exit(1);
+	}
 	start_color();
 	init_pair(PAIR_DEF, COLOR_WHITE, COLOR_BLACK);
 	init_pair(PAIR_GOOD, COLOR_GREEN, COLOR_BLACK);
@@ -353,7 +361,7 @@ void test(struct FFNN* ffnn, float** inputs, int width, int height, float** outp
         }
 		yCursor = 7;
 		setCursor();
-        printw("Error Rate: %.2f%% (%d)", 100 * (float)errorCount / (i + 1), i + 1);
+        printw("Error Rate: %.2f%% (%d)  ", 100 * (float)errorCount / (i + 1), i + 1);
 		refresh();
 		if (guessIndex != goodIndex) {
 			attroff(A_DIM);

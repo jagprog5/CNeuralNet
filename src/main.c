@@ -20,12 +20,12 @@ int main(int argc, char **argv) {
                         32,
                         10};
     struct FFNN* ffnn = allocFFNN(3, layerSizes);
-    randomize(ffnn);
     setClassifier(ffnn);
 
 	bool flag = TRUE;
 	struct DisplayState* ds = calloc(1, sizeof(struct DisplayState));
 	while (flag) {
+		randomize(ffnn);
 		handleUserInputAndTrain(ds, imgs, numImages, width, height, labels, ffnn);
 		clearTopLeftText(7);
 		yCursor = 1;

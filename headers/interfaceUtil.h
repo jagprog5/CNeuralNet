@@ -16,6 +16,10 @@ struct DisplayState {
 int yCursor; // yCursor is set as needed,
 int xCursor; // xCursor should be kept constant, and reset if changed
 
+#define MINCOLS 88
+#define MINROWS 31
+
+
 #define setCursor() move(yCursor, xCursor)
 #define printNextLine(str) ++yCursor;setCursor();addstr(str)
 
