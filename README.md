@@ -2,7 +2,7 @@
 
 # C Neural Network
 
-Use `make run` to compile and run. Needs the [ncurses](https://www.cyberciti.biz/faq/linux-install-ncurses-library-headers-on-debian-ubuntu-centos-fedora/) library.
+Use `make run` to compile and run. Needs the [ncurses](https://www.cyberciti.biz/faq/linux-install-ncurses-library-headers-on-debian-ubuntu-centos-fedora/) library. Or, run in a docker container (139MB).
 
 [Classifies the MNIST handwritten digit database](http://yann.lecun.com/exdb/mnist/)
 
