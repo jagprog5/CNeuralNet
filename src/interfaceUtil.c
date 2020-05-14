@@ -2,9 +2,9 @@
 #include <float.h>
 #include <stdlib.h>
 #include <math.h>
-#include "interfaceUtil.h"
 #include "FFNN.h"
 #include "FFNNInspection.h"
+#include "interfaceUtil.h"
 
 void ncursesConfig() {
 	if (initscr() == NULL) {
@@ -39,7 +39,14 @@ void printInstructions() {
 	printNextLine("Use the LEFT and RIGHT arrow keys to toggle the screen.");
 	printNextLine("Use the UP and DOWN arrow keys to navigate the images.");
 	printNextLine("Press space to pause/resume.");
-	printNextLine("Press backspace to reset to the beginning of training.");
+	++yCursor;
+	setCursor();
+	#ifndef DOCKER
+		static const char back[] = "backspace";
+	#else
+		static char back[] = "'p'";
+	#endif
+	printw("Press %s to reset to the beginning of training.", back);
 }
 
 void clearInstructions() {
@@ -52,14 +59,14 @@ void clearInstructions() {
 char shade(float pixel) {
 	char c;
 	if (pixel < 0.1)			c = ' ';
-		else if (pixel < 0.2)   c = '.';
-		else if (pixel < 0.3)   c = ':';
-		else if (pixel < 0.4)   c = '-';
-		else if (pixel < 0.5)   c = '=';
-		else if (pixel < 0.6)   c = '+';
-		else if (pixel < 0.7)   c = '*';
-		else if (pixel < 0.8)   c = '#';
-		else if (pixel < 0.9)   c = '&';
+		else if (pixel < 0.2f)   c = '.';
+		else if (pixel < 0.3f)   c = ':';
+		else if (pixel < 0.4f)   c = '-';
+		else if (pixel < 0.5f)   c = '=';
+		else if (pixel < 0.6f)   c = '+';
+		else if (pixel < 0.7f)   c = '*';
+		else if (pixel < 0.8f)   c = '#';
+		else if (pixel < 0.9f)   c = '&';
 		else					c = '$';
 	return c;
 }
@@ -82,14 +89,14 @@ static void printBlank(int width, int height) {
 	attron(A_DIM);
 	int locY = 0;
 	int locX;
-	char arr[width];
+	char arr[width + 1];
 	for (int i = 0; i < width; ++i) {
 		arr[i] = shade(1);
 	}
 	arr[width] = '\0';
 	for (int j = 0; j < height; ++j) {
-		locX = COLS - width - 2;
 		++locY;
+		locX = COLS - width - 2;
 		move(locY, locX);
 		printw("%s", arr);
 	}
@@ -259,10 +266,10 @@ static void handleArrowInput(int ch, struct DisplayState *ds, int numImages, boo
 }
 
 static void handleOtherInput(int ch, bool *training, int *setIndex, int *shownIndex, struct FFNN* ffnn) {
-	if (ch == ' ' || ch == KEY_BACKSPACE) {
+	if (ch == ' ' || ch == MY_BACKSPACE) {
 		if (ch == ' ') {
 			*training = !*training;
-		} else if (ch == KEY_BACKSPACE) {
+		} else if (ch == MY_BACKSPACE) {
 			*training = FALSE;
 			*setIndex = 0;
 			randomize(ffnn);
@@ -272,12 +279,10 @@ static void handleOtherInput(int ch, bool *training, int *setIndex, int *shownIn
 	}
 }
 
-/**
- * This funct got a bit convoluted. TODO clean up
- */
 void handleUserInputAndTrain(struct DisplayState* ds, float** imgs, int numImages,
 									int width, int height, float** labels, struct FFNN* ffnn) {
 	printInstructions();
+	printProbs(TRUE, NULL, NULL, 0);
 	bool training = FALSE;
 	bool blankPulse = TRUE; // draw pulse, since BLANK doesn't print anything otherwise
 	int setIndex = 0; // Index in training set (as opposed to shownIndex in ds)
@@ -302,7 +307,7 @@ void handleUserInputAndTrain(struct DisplayState* ds, float** imgs, int numImage
 			forwardPass(ffnn);
 		}
 
-		if (ch == ' ' || ch == KEY_BACKSPACE) {
+		if (ch == ' ' || ch == MY_BACKSPACE) {
 			yCursor = 6;
 			setCursor();
 			if (training) {
@@ -317,7 +322,7 @@ void handleUserInputAndTrain(struct DisplayState* ds, float** imgs, int numImage
 		if (ds->screenState != SCREEN_BLANK) {
 			printw("Training: %d       ", setIndex + 1);
 		} else if (blankPulse) {
-			addstr("Training...        ");
+			addstr("                   ");
 		}
 
 		if (blankPulse || ds->screenState != SCREEN_BLANK) {
@@ -377,7 +382,7 @@ bool handlePostTrainingInput(struct DisplayState* ds, float** imgs, int numImage
 	while (1) {
 		int ch = getch();
 		handleArrowInput(ch, ds, numImages, NULL);
-		if (ch == KEY_BACKSPACE) {
+		if (ch == MY_BACKSPACE) {
 			clearTopLeftText(12);
 			yCursor = 5;
 			printNextLine("Training reset.");

@@ -2,7 +2,9 @@
 
 # C Neural Network
 
-Use `make run` to compile and run. Needs the [ncurses](https://www.cyberciti.biz/faq/linux-install-ncurses-library-headers-on-debian-ubuntu-centos-fedora/) library. Or, run in a docker container (139MB).
+Use `make run` to compile and run. Needs the [ncurses](https://www.cyberciti.biz/faq/linux-install-ncurses-library-headers-on-debian-ubuntu-centos-fedora/) library.
+
+Or, run in a docker container (138MB image).
 
 [Classifies the MNIST handwritten digit database](http://yann.lecun.com/exdb/mnist/)
 
@@ -15,12 +17,12 @@ Properties of this network:
 
 Controls:
  * The LEFT and RIGHT arrow keys toggle the screen view
-	 * No output is fast, and trains the network is ~30 seconds
-	 * Set view shows the current image in the training set, and the network's output
+	 * *No output* is fast, and trains the network is ~30 seconds
+	 * *Set view* shows the current image in the training set, and the network's output
 		 * "Probs" shows the network's output for the image
 		 * "Label" shows the image's correct corresponding digit, as given in the dataset
 		 * "GOOD" & "BAD" indicates if the highest probability output matches the label
-	 * Field view shows the receptive field for the output neurons
+	 * *Field view* shows the receptive field for the output neurons
  * The UP and DOWN arrow keys are used to navigate
 	 * In set view, this moves through the dataset
 	 * In field view, this moves through the output neurons

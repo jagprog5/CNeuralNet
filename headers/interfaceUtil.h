@@ -1,6 +1,13 @@
 #ifndef ASCII_PIXEL_H
 #define ASCII_PIXEL_H
 
+#ifdef DOCKER
+// docker and shell don't like backspace ¯\_(ツ)_/¯
+#define MY_BACKSPACE 'p'
+#else
+#define MY_BACKSPACE KEY_BACKSPACE
+#endif
+
 #include "FFNN.h"
 
 enum ColorPairState {PAIR_DEF = 1, PAIR_GOOD, PAIR_BAD};
@@ -18,7 +25,6 @@ int xCursor; // xCursor should be kept constant, and reset if changed
 
 #define MINCOLS 88
 #define MINROWS 31
-
 
 #define setCursor() move(yCursor, xCursor)
 #define printNextLine(str) ++yCursor;setCursor();addstr(str)
