@@ -5,9 +5,8 @@ HEADERDIR = headers
 SOURCES = $(wildcard $(SOURCEDIR)/*.c)
 OBJECTS = $(patsubst $(SOURCEDIR)/%.c,$(BUILDDIR)/%.o,$(SOURCES))
 
-CFLAGS = -lm -lncurses
+CFLAGS = -lm -lncurses -Ofast
 EXECUTABLE = $(BUILDDIR)/cneuralnet
-
 
 .PHONY: all clean run
 

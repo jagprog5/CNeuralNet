@@ -164,7 +164,6 @@ static void printSideScreen(struct DisplayState *ds, float** imgs,
 	} else if (ds->screenState == SCREEN_NET) {
 		printw("     Receptive Field %d", ds->outputIndex);
 	}
-	refresh();
 }
 
 /**
@@ -228,6 +227,8 @@ void clearTopLeftText(int numLines) {
 /**
  * wraps val to [min, max)
  */
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
 static void wrapRange(int* val, int min, int max) {
 	if (*val < min) {
 		*val = max - 1;
@@ -235,9 +236,10 @@ static void wrapRange(int* val, int min, int max) {
 		*val = min;
 	}
 }
+#pragma GCC pop_options
 
 /**
- * *blankPulse can be NULL if not used
+ * blankPulse can be NULL if not used
  */
 static void handleArrowInput(int ch, struct DisplayState *ds, int numImages, bool *blankPulse) {
 	if (ch == KEY_RIGHT) {
