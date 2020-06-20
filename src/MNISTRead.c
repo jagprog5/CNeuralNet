@@ -20,7 +20,7 @@ void flipEndian32(uint32_t* in) {
 }
 
 void readFlipEndian32(FILE* fp, uint32_t* input) {
-	fread(input, sizeof(*input), 1, fp);
+	int ignore = fread(input, sizeof(*input), 1, fp);
 	flipEndian32(input);
 }
 
@@ -40,7 +40,7 @@ float** readMNISTImages(char* path, uint32_t* numImages, uint32_t* width, uint32
 	float** imgsOutput = malloc(sizeof(*imgsOutput) * *numImages);
 	uint64_t imgsDataLen = *numImages * *width * *height;
 	uint8_t* imgsBytes = malloc(sizeof(*imgsBytes) * imgsDataLen);
-	fread(imgsBytes, sizeof(*imgsBytes), imgsDataLen, fp);
+	int ignore = fread(imgsBytes, sizeof(*imgsBytes), imgsDataLen, fp);
 	
 	++yCursor;
 	for (uint32_t i = 0; i < *numImages; ++i) {
@@ -49,9 +49,11 @@ float** readMNISTImages(char* path, uint32_t* numImages, uint32_t* width, uint32
 		for (int j = 0; j < imgDataLen; ++j) {
 			imgsOutput[i][j] = (float)imgsBytes[j + i * imgDataLen] / 0xFF;
 		}
-		setCursor();
-		printw("Reading Imgs: %d", i + 1);
-		refresh();
+		if ((i + 1) % 100 == 0) {
+			setCursor();
+			printw("Reading Imgs: %d", i + 1);
+			refresh();
+		}
 	}
 
 	fclose(fp);
@@ -70,7 +72,7 @@ float** readMNISTLabels(char* path, uint32_t* numLabels) {
 	readFlipEndian32(fp, numLabels);
 
 	uint8_t* labels = malloc(sizeof(*labels) * *numLabels);
-	fread(labels, sizeof(*labels), *numLabels, fp);
+	int ignore = fread(labels, sizeof(*labels), *numLabels, fp);
 
 	float** outputs = malloc(sizeof(*outputs) * *numLabels);
 
@@ -78,9 +80,11 @@ float** readMNISTLabels(char* path, uint32_t* numLabels) {
 	for (uint32_t i = 0; i < *numLabels; ++i) {
 		outputs[i] = calloc(10, sizeof(float));
 		outputs[i][labels[i]] = 1;
-		setCursor();
-		printw("Reading Labels: %d", i + 1);
-		refresh();
+		if ((i + 1) % 100 == 0) {
+			setCursor();
+			printw("Reading Labels: %d", i + 1);
+			refresh();
+		}
 	}
 
 	fclose(fp);

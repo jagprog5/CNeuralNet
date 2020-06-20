@@ -4,8 +4,6 @@
 
 Use `make run` to compile and run. Needs the [ncurses](https://www.cyberciti.biz/faq/linux-install-ncurses-library-headers-on-debian-ubuntu-centos-fedora/) library.
 
-Or, run in a docker container (138MB image, containing everything needed to compile).
-
 [Classifies the MNIST handwritten digit database](http://yann.lecun.com/exdb/mnist/)
 
 Properties of this network:
@@ -17,8 +15,8 @@ Properties of this network:
 
 Screen Views:
  * *No-output* is fast
- 	 * Trains in ~2 seconds with compiler optimization
-	 * Takes ~30 seconds without optimization
+   * Doesn't update the screen, but...
+   * Trains in ~2 seconds. BLAZINGLY fast
  * *Set-view* shows the current image in the training set, and the network's output
 	 * "Probs" shows the network's output for the image
 	 * "Label" shows the image's correct corresponding digit, as given in the dataset
