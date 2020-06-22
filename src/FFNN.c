@@ -60,23 +60,6 @@ void randomize(struct FFNN* ffnn) {
     }
 }
 
-/**
- * vals is deep copied.
- * vals[l] points to the weights and biases for layer l + 1 (since l=0 has no weights or biases)
- */
-void setNetwork(struct FFNN* ffnn, float** vals) {
-    vals -= 1;
-    for (int l = 1; l < ffnn->numLayers; ++l) {
-        int neuronOffset = ffnn->layerSizes[l - 1] + 1;
-        for (int j = 0; j < ffnn->layerSizes[l]; ++j) {
-            B(l, j) = vals[l][j * neuronOffset];
-            for (int k = 0; k < ffnn->layerSizes[l - 1]; ++k) {
-                W(l, j, k) = vals[l][k + 1 + j * neuronOffset];
-            }
-        }
-    }
-}
-
 float quadraticLoss(float* prediction, float* actual, int size) {
     float total = 0;
     for (int i = 0; i < size; ++i) {

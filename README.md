@@ -25,5 +25,3 @@ Screen Views:
 
 After training, the test set is loaded, and the error rate is calculated.
 
-Make sure the terminal window size is large enough.
-If running in WSL, run in tmux to avoid rendering issues.
