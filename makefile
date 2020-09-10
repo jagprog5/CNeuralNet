@@ -5,7 +5,7 @@ HEADERDIR = headers
 SOURCES := $(wildcard $(SOURCEDIR)/*.c)
 OBJECTS := $(patsubst $(SOURCEDIR)/%.c,$(BUILDDIR)/%.o,$(SOURCES))
 
-CFLAGS = -Ofast
+CFLAGS = -Ofast -std=c99
 LINKFLAGS = -lm -lncurses
 EXECUTABLE := $(BUILDDIR)/cneuralnet
 

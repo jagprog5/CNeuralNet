@@ -4,7 +4,7 @@
 
 Use `make run` to compile and run. Needs the [ncurses](https://www.cyberciti.biz/faq/linux-install-ncurses-library-headers-on-debian-ubuntu-centos-fedora/) library.
 
-[Classifies the MNIST handwritten digit database](http://yann.lecun.com/exdb/mnist/)
+[Classifies elements in the MNIST handwritten digit database](http://yann.lecun.com/exdb/mnist/)
 
 Properties of this network:
   * 28x28 inputs, 32 nodes in hidden layer, 10 output nodes
