@@ -197,13 +197,13 @@ void SGD(struct FFNN* ffnn,
         applyGradient(ffnn, gradient, learningRate);
         freeNodes(gradient, ffnn->numLayers, ffnn->layerSizes);
 
-        float* guess = getOutput(ffnn);
-        float loss;
-        if (ffnn->classifier) {
-            loss = crossEntropyLoss(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
-        } else {
-            loss = quadraticLoss(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
-        }
+        //float* guess = getOutput(ffnn);
+        //float loss;
+        //if (ffnn->classifier) {
+        //    loss = crossEntropyLoss(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
+        //} else {
+        //    loss = quadraticLoss(guess, outputs[i], ffnn->layerSizes[ffnn->numLayers - 1]);
+        //}
     }
 }
 
