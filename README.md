@@ -2,7 +2,13 @@
 
 # C Neural Network
 
-Use `make run` to compile and run. Needs the [ncurses](https://www.cyberciti.biz/faq/linux-install-ncurses-library-headers-on-debian-ubuntu-centos-fedora/) library.
+Needs ncurses:
+
+```bash
+apt install libncurses5-dev
+```
+
+Use `make run` to compile and run.
 
 [Classifies elements in the MNIST handwritten digit database](http://yann.lecun.com/exdb/mnist/)
 
